@@ -570,6 +570,9 @@ class AliasManager:
         self.settings.update(settings or {})
         self.on_change = on_change
         self.last_scan: List[Dict[str, Any]] = []
+        #: The most recent proposal, so the web interface can show it again
+        #: after a page reload instead of probing the network once more.
+        self.last_plan: List[Dict[str, Any]] = []
         self.last_error = ""
         self.last_run = 0.0
         self.conflicts: List[Dict[str, Any]] = []
@@ -598,14 +601,19 @@ class AliasManager:
         base = self.base()
         present = {entry["address"]: entry for entry in list_addresses()}
         records = self.records()
+        names = {p["id"]: p.get("name") or p["id"] for p in (printers or [])}
         aliases = []
         for address, entry in sorted(records.items()):
+            printer_id = entry.get("printer", "")
             aliases.append(
                 {
                     "address": address,
                     "interface": entry.get("interface", ""),
                     "prefixlen": entry.get("prefixlen", 24),
-                    "printer": entry.get("printer", ""),
+                    "printer": printer_id,
+                    # The id is what the configuration keys on; the name is
+                    # what the user gave the printer and recognises.
+                    "printer_name": names.get(printer_id, printer_id),
                     "created": entry.get("created", 0),
                     "method": entry.get("method", ""),
                     "present": address in present,
@@ -626,6 +634,7 @@ class AliasManager:
             "aliases": aliases,
             "addresses": list_addresses(),
             "candidates": self.last_scan,
+            "plan": self.last_plan,
             "conflicts": self.conflicts,
             "needs_address": needs,
             "last_error": self.last_error,
@@ -692,32 +701,37 @@ class AliasManager:
             and str(printer.get("bind") or "0.0.0.0") in ("", "0.0.0.0")
         ]
 
-    def assign(
+    def plan(
         self,
         printers: List[Dict[str, Any]],
         force: bool = False,
     ) -> Dict[str, Any]:
-        """Give every printer without a fixed address a verified free one.
+        """Work out which address each printer would get - and change nothing.
 
-        ``force`` assigns even when only one printer exists.  Without it, a
+        Separated from ``apply`` because assigning an address is not a
+        reversible little detail: it changes where the POS application has to
+        point, and that has to be typed in by a human afterwards.  So the
+        proposal is shown first, printer by printer, and only what was
+        confirmed is carried out.
+
+        ``force`` plans even when only one printer exists.  Without it, a
         single printer is left on ``0.0.0.0`` on purpose: it then answers on
-        *every* address of the device, which is the friendlier default and
-        needs no extra address at all.
+        *every* address of the device, which needs no extra address at all.
         """
         with self._lock:
             base = self.base()
             if not base:
                 self.last_error = "no IPv4 address on this device"
-                return {"ok": False, "error": self.last_error, "assigned": []}
+                return {"ok": False, "error": self.last_error, "proposals": []}
 
             enabled = [p for p in printers if p.get("enabled", True)]
             needing = self._printers_needing(printers)
             if not needing:
-                return {"ok": True, "assigned": [], "note": "nothing to do"}
+                return {"ok": True, "proposals": [], "note": "nothing to do"}
             if len(enabled) < 2 and not force:
                 return {
                     "ok": True,
-                    "assigned": [],
+                    "proposals": [],
                     "note": "only one printer - a separate address is not needed",
                 }
 
@@ -730,62 +744,188 @@ class AliasManager:
                 exclude=taken,
                 limit=max(len(needing) * 6, 16),
             )
-            assigned: List[Dict[str, Any]] = []
-            failures: List[Dict[str, Any]] = []
-            index = self._next_index()
+            proposals: List[Dict[str, Any]] = []
             checks: List[Dict[str, Any]] = []
 
             for printer in needing:
                 chosen: Optional[Dict[str, Any]] = None
+                error = ""
                 while pool:
                     address = pool.pop(0)
                     result = check_address(base["interface"], address, attempts)
                     checks.append(result)
                     if result["method"] == "none":
-                        self.last_error = result["detail"]
+                        error = result["detail"]
+                        self.last_error = error
                         break
                     if result["free"]:
                         chosen = result
                         break
-                if not chosen:
-                    failures.append({"printer": printer["id"], "error": self.last_error or "no free address found"})
-                    continue
-                ok, detail = add_alias(
-                    base["interface"], chosen["address"], base["prefixlen"], index
-                )
-                if not ok:
-                    failures.append({"printer": printer["id"], "error": detail})
-                    continue
-                entry = {
-                    "interface": base["interface"],
-                    "prefixlen": base["prefixlen"],
-                    "printer": printer["id"],
-                    "created": time.time(),
-                    "method": chosen["method"],
-                    "label": detail,
-                }
-                self._remember(chosen["address"], entry)
-                printer["bind"] = chosen["address"]
-                assigned.append(
+                proposals.append(
                     {
                         "printer": printer["id"],
                         "name": printer.get("name", printer["id"]),
-                        "address": chosen["address"],
+                        "address": chosen["address"] if chosen else "",
                         "prefixlen": base["prefixlen"],
                         "interface": base["interface"],
-                        "method": chosen["method"],
+                        "method": chosen["method"] if chosen else "",
+                        "error": "" if chosen else (error or "no free address found"),
                     }
                 )
-                index += 1
 
             self.last_scan = checks or self.last_scan
             self.last_run = time.time()
+            self.last_plan = proposals
+            return {
+                "ok": all(p["address"] for p in proposals),
+                "proposals": proposals,
+                "checks": checks,
+                "interface": base["interface"],
+                "prefixlen": base["prefixlen"],
+            }
+
+    def apply(
+        self,
+        printers: List[Dict[str, Any]],
+        assignments: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Carry out a confirmed mapping of printer -> address.
+
+        Every address is probed **again** here, even though the plan just
+        probed it: between showing the proposal and the user pressing the
+        button there is human time, which is exactly long enough for a phone
+        to be switched on. An address may also have been typed in by hand.
+        """
+        with self._lock:
+            base = self.base()
+            if not base:
+                self.last_error = "no IPv4 address on this device"
+                return {"ok": False, "error": self.last_error, "assigned": []}
+
+            by_id = {printer["id"]: printer for printer in printers}
+            attempts = int(self.settings.get("probe_attempts") or 3)
+            index = self._next_index()
+            assigned: List[Dict[str, Any]] = []
+            failures: List[Dict[str, Any]] = []
+            existing = {entry["address"] for entry in list_addresses()}
+            records = self.records()
+
+            for wanted in assignments or []:
+                printer_id = str(wanted.get("printer") or "")
+                address = str(wanted.get("address") or "").strip()
+                printer = by_id.get(printer_id)
+                if printer is None:
+                    failures.append({"printer": printer_id, "error": "unknown printer"})
+                    continue
+                if not address:
+                    continue
+                try:
+                    ip_to_int(address)
+                except OSError:
+                    failures.append({"printer": printer_id, "error": f"'{address}' is not an IPv4 address"})
+                    continue
+                if not same_subnet(address, base["address"], base["prefixlen"]):
+                    failures.append(
+                        {
+                            "printer": printer_id,
+                            "error": f"{address} is not in {base['address']}/{base['prefixlen']}",
+                        }
+                    )
+                    continue
+                if address in existing and address not in records:
+                    failures.append(
+                        {"printer": printer_id, "error": f"{address} already belongs to this device"}
+                    )
+                    continue
+
+                if address not in existing:
+                    check = check_address(base["interface"], address, attempts)
+                    if check["method"] == "none":
+                        failures.append({"printer": printer_id, "error": check["detail"]})
+                        continue
+                    if not check["free"]:
+                        failures.append(
+                            {
+                                "printer": printer_id,
+                                "error": f"{address} answered from {check['mac'] or 'another device'}",
+                            }
+                        )
+                        continue
+                    ok, detail = add_alias(
+                        base["interface"], address, base["prefixlen"], index
+                    )
+                    if not ok:
+                        failures.append({"printer": printer_id, "error": detail})
+                        continue
+                    index += 1
+                    method = check["method"]
+                    label = detail
+                else:
+                    method = str((records.get(address) or {}).get("method") or "")
+                    label = str((records.get(address) or {}).get("label") or "")
+
+                self._remember(
+                    address,
+                    {
+                        "interface": base["interface"],
+                        "prefixlen": base["prefixlen"],
+                        "printer": printer_id,
+                        "created": time.time(),
+                        "method": method,
+                        "label": label,
+                    },
+                )
+                printer["bind"] = address
+                existing.add(address)
+                assigned.append(
+                    {
+                        "printer": printer_id,
+                        "name": printer.get("name", printer_id),
+                        "address": address,
+                        "prefixlen": base["prefixlen"],
+                        "interface": base["interface"],
+                        "method": method,
+                    }
+                )
+
             if assigned and self.on_change:
                 try:
                     self.on_change()
                 except Exception as exc:  # noqa: BLE001 - a callback must not break assignment
                     log.warning("IP alias callback failed: %s", exc)
-            return {"ok": not failures, "assigned": assigned, "failed": failures, "checks": checks}
+            return {"ok": not failures, "assigned": assigned, "failed": failures}
+
+    def assign(
+        self,
+        printers: List[Dict[str, Any]],
+        force: bool = False,
+    ) -> Dict[str, Any]:
+        """Plan and immediately apply - the unattended path used at start-up."""
+        planned = self.plan(printers, force=force)
+        if not planned.get("proposals"):
+            return {
+                "ok": planned.get("ok", True),
+                "assigned": [],
+                "failed": [],
+                "note": planned.get("note", ""),
+                "error": planned.get("error", ""),
+            }
+        result = self.apply(
+            printers,
+            [
+                {"printer": p["printer"], "address": p["address"]}
+                for p in planned["proposals"]
+                if p["address"]
+            ],
+        )
+        result.setdefault("failed", []).extend(
+            {"printer": p["printer"], "error": p["error"]}
+            for p in planned["proposals"]
+            if not p["address"]
+        )
+        result["ok"] = not result["failed"]
+        result["checks"] = planned.get("checks") or []
+        return result
 
     def _next_index(self) -> int:
         used = set()

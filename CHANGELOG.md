@@ -4,6 +4,53 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.3.5] - 2026-08-25
+
+Three places where the software knew more than it was saying.
+
+### Changed
+
+- **Nothing prints on its own any more.** Every printer option that puts ink on
+  paper now defaults to *off* - the start-up status slip and the network outage
+  notice included. A receipt printer stands in a shop; a slip nobody asked for
+  is at best confusing and at worst appears in the middle of service. The
+  features are unchanged and one click away, and the status slip is still
+  available on demand from the overview.
+  An existing installation is migrated **once** on the first start after the
+  update: the self-printing options are switched off and that fact is recorded.
+  Switching one back on afterwards sticks - the migration never runs twice.
+
+### Added
+
+- **The device scan shows the serial number, always** - in its own column, and
+  when a device does not report one it says so instead of leaving the field
+  empty. Two identical printers differ in nothing else a scan can see.
+- **The scan says which printer already uses a device**, and how certain that
+  is: matched *by serial number* (proof), *by device file* (proof), or *by
+  vendor and model only* - which is a guess, is marked as one, and is exactly
+  the case that silently swaps two identical printers after a reboot.
+- **Two identical devices without serial numbers are called out** on the row,
+  because from there on nothing in software can tell them apart.
+- **"Use" no longer always targets the first printer.** With several printers
+  the target is picked per row, and taking a device away from another printer
+  asks first.
+- **IP addresses are proposed before they are assigned.** *Propose an
+  assignment* shows a table of printer → address, with the addresses editable,
+  and changes nothing. Only *Apply assignment* creates them - and every address
+  is probed again at that moment, because between proposal and confirmation
+  there is human time, which is long enough for a phone to be switched on.
+- **A full printer → address table**, including the printers still on
+  `0.0.0.0`, so the alias list can no longer be misread as "everyone has an
+  address". Assigned addresses now show the printer's name, not just its id.
+- New endpoint `POST /api/ip-aliases/plan`; `POST /api/ip-aliases/assign`
+  accepts an explicit `assignments` list.
+
+### Fixed
+
+- Vendor and product ids written as `0x04b8` in `config.yaml` compared unequal
+  to the integers the scan reports, so a configured printer could look
+  unassigned.
+
 ## [1.3.4] - 2026-08-24
 
 BonBridge finds its own IP addresses.

@@ -28,6 +28,7 @@ from . import (
     probes,
     receipts,
     snmp,
+    state,
     sysinfo,
     updater,
 )
@@ -118,6 +119,7 @@ class BonBridge:
     def start(self) -> None:
         paths.ensure_runtime_dirs()
         self._ensure_default_printer()
+        self._migrate_printing_options()
         # Before the printers: a RAW listener bound to a fixed address cannot
         # start until that address exists on the interface.
         self._start_ip_aliases()
@@ -150,6 +152,42 @@ class BonBridge:
         log.info(
             "Created initial printer entry (%s)",
             "auto-detected" if detected else "no device found yet",
+        )
+
+    #: Options that put ink on paper without being asked.  They used to
+    #: default to on; from 1.3.5 nothing prints unless it was switched on.
+    SELF_PRINTING_OPTIONS = ("startup_report", "network_alert")
+
+    def _migrate_printing_options(self) -> None:
+        """Switch the self-printing options off once on an existing install.
+
+        Changing a default only affects new configurations - an existing
+        ``config.yaml`` already carries the old explicit ``true``.  So this
+        runs exactly once, records that it ran, and never touches the values
+        again: if the user switches a slip back on afterwards, it stays on.
+        """
+        marker = "printing_options_off_v1"
+        if state.get("migrations", marker):
+            return
+        changed: List[str] = []
+        for printer in self.config.printers:
+            options = printer.setdefault("options", {})
+            for key in self.SELF_PRINTING_OPTIONS:
+                if options.get(key):
+                    options[key] = False
+                    changed.append(f"{printer['id']}.{key}")
+        state.set_value("migrations", marker, True)
+        if not changed:
+            return
+        try:
+            self.config.save()
+        except OSError as exc:
+            log.warning("Cannot write configuration after the option migration: %s", exc)
+            return
+        log.info(
+            "Switched off automatic slips (once): %s - they can be switched back on per "
+            "printer under 'Printers -> Options'",
+            ", ".join(changed),
         )
 
     def _start_printers(self) -> None:
@@ -390,11 +428,27 @@ class BonBridge:
             return {"ok": False, "error": "IP alias management is not available"}
         return self.ipalias.scan(count)
 
-    def assign_ip_aliases(self, force: bool = False) -> Dict[str, Any]:
-        """Assign addresses now and restart the listeners that changed."""
+    def plan_ip_aliases(self, force: bool = False) -> Dict[str, Any]:
+        """Propose an address per printer without touching anything."""
         if self.ipalias is None:
             return {"ok": False, "error": "IP alias management is not available"}
-        result = self.ipalias.assign(self.config.printers, force=force)
+        return self.ipalias.plan(self.config.printers, force=force)
+
+    def assign_ip_aliases(
+        self, force: bool = False, assignments: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """Assign addresses now and restart the listeners that changed.
+
+        With ``assignments`` the confirmed mapping is carried out exactly as
+        given; without it, a plan is made and applied in one go (the path the
+        daemon uses at start-up, where nobody is there to confirm).
+        """
+        if self.ipalias is None:
+            return {"ok": False, "error": "IP alias management is not available"}
+        if assignments:
+            result = self.ipalias.apply(self.config.printers, assignments)
+        else:
+            result = self.ipalias.assign(self.config.printers, force=force)
         if result.get("assigned"):
             self._save_config_quietly()
             self.restart_printers()
@@ -751,7 +805,129 @@ class BonBridge:
         }
 
     def scan(self) -> List[Dict[str, Any]]:
-        return scan_devices()
+        """Enumerate attached devices and say which are already in use.
+
+        A bare list of devices is not enough once more than one printer is
+        attached: two identical TM-T88V look the same in every field except
+        the serial number, and "Use" on the wrong row silently moves a print
+        group to the other printer.  So each device is matched against the
+        configured printers and carries the result.
+        """
+        devices = scan_devices()
+        claims = self._printer_identities()
+        for device in devices:
+            device["serial"] = str(device.get("serial") or "")
+            match = self._match_device(device, claims)
+            device["assigned_to"] = match["printer_id"]
+            device["assigned_name"] = match["name"]
+            device["match_by"] = match["by"]
+            device["ambiguous"] = match["ambiguous"]
+        # Two devices of the same model without serial numbers cannot be told
+        # apart by anything BonBridge can see.  Say so on the device rather
+        # than letting the user find out after the first shift.
+        for device in devices:
+            if device.get("serial"):
+                continue
+            twins = [
+                other
+                for other in devices
+                if other is not device
+                and not other.get("serial")
+                and other.get("transport") == device.get("transport")
+                and other.get("vendor_id") == device.get("vendor_id")
+                and other.get("product_id") == device.get("product_id")
+            ]
+            if twins:
+                device["indistinguishable"] = True
+        return devices
+
+    def _printer_identities(self) -> List[Dict[str, Any]]:
+        """What each configured printer is actually connected to.
+
+        The live transport is preferred over the configuration: a printer set
+        to ``auto`` has no identity in ``config.yaml``, but the running
+        transport knows exactly which device it opened.
+        """
+        identities: List[Dict[str, Any]] = []
+        for printer in self.config.printers:
+            configured = dict((printer.get("transport") or {}).get("settings") or {})
+            configured.update(
+                {k: v for k, v in (printer.get("transport") or {}).items() if k != "settings"}
+            )
+            kind = str((printer.get("transport") or {}).get("type") or "auto")
+            settings = dict(configured)
+            runtime = self.printers.get(printer["id"])
+            if runtime is not None:
+                described = runtime.worker.snapshot().get("transport") or {}
+                if described.get("settings"):
+                    settings = dict(described["settings"])
+                    kind = str(described.get("type") or kind)
+            identities.append(
+                {
+                    "id": printer["id"],
+                    "name": printer.get("name") or printer["id"],
+                    "type": kind,
+                    "settings": settings,
+                }
+            )
+        return identities
+
+    @staticmethod
+    def _match_device(
+        device: Dict[str, Any], identities: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Decide whether a scanned device belongs to a configured printer.
+
+        Three strengths of evidence, and the result says which one was used -
+        because "same vendor and product" is a guess when two identical
+        printers are attached, while a matching serial number is proof.
+        """
+        empty = {"printer_id": "", "name": "", "by": "", "ambiguous": False}
+
+        def as_int(value: Any) -> Any:
+            try:
+                return int(str(value), 0) if isinstance(value, str) else int(value)
+            except (TypeError, ValueError):
+                return None
+
+        serial = str(device.get("serial") or "").strip()
+        path = str(device.get("device") or "")
+        weak: Dict[str, Any] = {}
+        for entry in identities:
+            settings = entry["settings"]
+            if device.get("transport") == "usb" and entry["type"] in ("usb", "auto"):
+                same_model = (
+                    as_int(settings.get("vendor_id")) == as_int(device.get("vendor_id"))
+                    and as_int(settings.get("product_id")) == as_int(device.get("product_id"))
+                )
+                if not same_model:
+                    continue
+                claimed = str(settings.get("serial") or "").strip()
+                if serial and claimed and serial == claimed:
+                    return {
+                        "printer_id": entry["id"],
+                        "name": entry["name"],
+                        "by": "serial",
+                        "ambiguous": False,
+                    }
+                if serial and claimed and serial != claimed:
+                    continue  # a different unit of the same model
+                if not weak:
+                    weak = {
+                        "printer_id": entry["id"],
+                        "name": entry["name"],
+                        "by": "model",
+                        "ambiguous": True,
+                    }
+            elif path and entry["type"] in ("usblp", "serial", "auto"):
+                if str(settings.get("device") or "") == path:
+                    return {
+                        "printer_id": entry["id"],
+                        "name": entry["name"],
+                        "by": "device",
+                        "ambiguous": False,
+                    }
+        return weak or empty
 
     # ------------------------------------------------------------------
     # Actions

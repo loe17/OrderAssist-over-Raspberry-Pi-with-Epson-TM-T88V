@@ -58,14 +58,21 @@ field carries an explanation that appears on hover.
 
 | Option | Default | Effect |
 |---|---|---|
-| **Print a status slip on start-up** | **on** | Prints a slip with the IP address, port and POS settings right after power-up. The device has no screen - the slip is the fastest route to the IP address. The setting lives in `config.yaml` and survives a power cut. |
+| **Print a status slip on start-up** | off | Prints a slip with the IP address, port and POS settings right after power-up. The device has no screen - the slip is the fastest route to the IP address. The same slip is available any time from *Overview -> Print status slip*. The setting lives in `config.yaml` and survives a power cut. |
 | **Warn when the paper runs low** | off | Prints a **one-off** notice as soon as the printer reports "paper near end". It is printed again only after new paper has been detected. This state also survives a reboot. |
+| **Notice on network outage** | off | Prints a slip on this printer when the device loses or regains its network connection. |
 | Cut after every job | off | Only enable when the POS application does not cut itself, otherwise it cuts twice. |
 | Open the cash drawer after every job | off | Usually undesirable for a kitchen printer. |
 | Reset (`ESC @`) before every job | off | Helps when a previous job leaves the font size or alignment changed. |
 | Status polling | on | Without it the traffic light stays grey. |
 | Polling interval | 10 s | Smaller values load the printer for nothing. |
 | Feed lines after job | 0 | Extra blank lines before the cut. |
+
+**Since 1.3.5 every option that prints something on its own defaults to off.**
+A receipt printer stands in a shop - a slip nobody asked for is at best
+confusing and at worst appears in the middle of service. On the first start
+after the update these options are switched off **once**; if you switch one
+back on afterwards, it stays on.
 
 ### "IP address for port 9100" - what is it for?
 
@@ -217,8 +224,9 @@ CUPS, Windows, macOS and the command line.
   disk space
 * **Network watchdog** - state of every interface, check interval and whether a
   notice is printed on an outage (see [10-updates.md](10-updates.md))
-* **IP addresses for several printers** - automatic search and assignment of
-  free IP addresses, list of assigned addresses, conflict check
+* **IP addresses for several printers** - automatic search for free addresses,
+  **a printer → address proposal to review and confirm**, a list of every
+  printer with its current address, conflict check
   (see [07-print-groups.md](07-print-groups.md))
 * **Updates** - installed and available version, installation with console
   output, file upload for devices without internet, backups
@@ -266,7 +274,8 @@ can use it too.
 | POST | `/api/printers/<id>/network-test` | Print the notice slip as a test |
 | GET | `/api/ip-aliases` | assigned IP aliases, settings, conflicts |
 | POST | `/api/ip-aliases/scan` | look for free addresses (`{"count": 6}`) |
-| POST | `/api/ip-aliases/assign` | assign addresses (`{"force": false}`) |
+| POST | `/api/ip-aliases/plan` | propose an assignment without changing anything |
+| POST | `/api/ip-aliases/assign` | apply an assignment (`{"assignments": [{"printer": "...", "address": "..."}]}`) |
 | POST | `/api/ip-aliases/release` | release an address (`{"address": "..."}`) |
 | POST | `/api/ip-aliases/check` | re-check the assigned addresses for duplicates |
 | GET | `/api/update` | Update state (installed/available/backups) |

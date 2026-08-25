@@ -42,19 +42,25 @@ except ImportError:  # pragma: no cover
 #: only be changed for testing.
 DEFAULT_RAW_PORT = 9100
 
+#: Nothing here prints on its own unless it was switched on.
+#:
+#: Every option that puts ink on paper defaults to *off*.  A receipt printer
+#: stands in a shop, and a slip nobody asked for is at best confusing and at
+#: worst appears in the middle of service.  The features are still there and
+#: one click away - they are just not the default.
 DEFAULT_PRINTER_OPTIONS: Dict[str, Any] = {
     # Print a status receipt (IP address, port, POS settings, QR code) when the
-    # daemon starts.  On by default because the device usually has no screen
-    # and the printed slip is the fastest way to learn the IP address.
-    "startup_report": True,
+    # daemon starts.  Useful on a device without a screen - but only when it
+    # was asked for.  The same slip is available on demand from the overview.
+    "startup_report": False,
     # Print a warning slip when the printer reports "paper near end".
-    # Off by default so it cannot surprise anyone during service.
     "paper_low_warning": False,
     # Print a slip on this printer when the *device* loses or regains its
     # network connection.  The USB link to the printer is unaffected by a
     # network outage, so the printer is the only thing left that can explain
-    # why the POS application stopped printing.
-    "network_alert": True,
+    # why the POS application stopped printing - worth switching on, but not
+    # behind the user's back.
+    "network_alert": False,
     # Append a paper cut after every job.  Most POS apps send their own cut
     # command, so this is off by default.
     "cut_after_job": False,

@@ -140,9 +140,13 @@ def command_scan() -> int:
         print("  (none - is the printer switched on and connected? It needs its own 24 V supply)")
     for device in devices:
         print(f"  {device.get('transport'):<7} {device.get('label')}")
-        for key in ("vendor_id_hex", "product_id_hex", "serial", "ieee1284_id", "device"):
+        for key in ("vendor_id_hex", "product_id_hex", "ieee1284_id", "device"):
             if device.get(key):
                 print(f"          {key}: {device[key]}")
+        # Always stated, present or not: with two identical printers the serial
+        # number is the only thing that keeps the assignment from swapping.
+        serial = device.get("serial")
+        print(f"          serial: {serial if serial else '(none reported)'}")
     return 0
 
 

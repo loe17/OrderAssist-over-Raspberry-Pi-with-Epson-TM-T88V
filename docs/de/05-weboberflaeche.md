@@ -57,18 +57,47 @@ Verwaltung der Drucker-Einträge.
 Jedes Eingabefeld hat eine Erklärung, die beim Darüberfahren mit der Maus
 erscheint.
 
+### Gefundene Geräte
+
+„Geräte suchen" zeigt jedes angeschlossene Gerät mit **Seriennummer** und mit
+der Angabe, **ob es bereits einem Drucker zugeordnet ist**. Die Sicherheit der
+Zuordnung steht dabei:
+
+| Anzeige | Bedeutung |
+|---|---|
+| über die Seriennummer erkannt | eindeutig |
+| über die Gerätedatei erkannt | eindeutig |
+| nur über Hersteller und Modell | **Vermutung** — bei zwei baugleichen Geräten unsicher |
+
+Meldet ein Gerät **keine Seriennummer** und hängt ein zweites baugleiches am
+selben Rechner, steht das ausdrücklich dabei: Von da an kann keine Software
+die beiden auseinanderhalten, und die Zuordnung kann nach einem Neustart
+tauschen. Der einzige verlässliche Ausweg ist, die Drucker nacheinander
+anzuschließen und jeweils zuzuordnen.
+
+Bei mehreren Druckern wählt man in der Zeile aus, **welchem** Drucker das Gerät
+zugeordnet wird. Nimmt man ein Gerät einem anderen Drucker weg, wird das
+vorher abgefragt.
+
 ### Optionen je Drucker
 
 | Option | Standard | Wirkung |
 |---|---|---|
-| **Statusbon beim Start drucken** | **an** | Druckt direkt nach dem Einschalten einen Bon mit IP-Adresse, Port und den Werten fürs Kassensystem. Das Gerät hat keinen Bildschirm – der Zettel ist der schnellste Weg zur IP. Die Einstellung liegt in `config.yaml` und überlebt einen Stromausfall. |
+| **Statusbon beim Start drucken** | aus | Druckt direkt nach dem Einschalten einen Bon mit IP-Adresse, Port und den Werten fürs Kassensystem. Das Gerät hat keinen Bildschirm – der Zettel ist der schnellste Weg zur IP. Denselben Bon gibt es jederzeit über *Übersicht → Statusbon drucken*. Die Einstellung liegt in `config.yaml` und überlebt einen Stromausfall. |
 | **Warnung bei Papierende** | aus | Sobald der Drucker „Papier fast leer" meldet, wird **einmalig** ein Hinweiszettel gedruckt. Er wird erst wieder gedruckt, nachdem zwischendurch neues Papier erkannt wurde. Auch dieser Zustand überlebt einen Neustart. |
+| **Hinweis bei Netzwerkausfall** | aus | Druckt auf diesem Drucker einen Zettel, wenn das Gerät die Netzwerkverbindung verliert oder wiederbekommt. |
 | Nach jedem Auftrag schneiden | aus | Nur einschalten, wenn das Kassensystem nicht selbst schneidet – sonst wird zweimal geschnitten. |
 | Nach jedem Auftrag Kassenlade öffnen | aus | Für Küchendrucker meist unerwünscht. |
 | Vor jedem Auftrag zurücksetzen (`ESC @`) | aus | Hilft, wenn ein vorheriger Auftrag Schriftgröße oder Ausrichtung verstellt hinterlässt. |
 | Statusabfrage aktiv | an | Ohne sie bleibt die Ampel grau. |
 | Abfrageintervall | 10 s | Kleinere Werte belasten den Drucker unnötig. |
 | Zeilenvorschub nach Auftrag | 0 | Zusätzliche Leerzeilen vor dem Schnitt. |
+
+**Seit 1.3.5 steht jede Option, die von allein etwas druckt, standardmäßig auf
+aus.** Ein Bondrucker steht im Laden — ein Zettel, den niemand angefordert hat,
+ist im besten Fall verwirrend und kommt im schlimmsten Fall mitten im Betrieb.
+Beim ersten Start nach dem Update werden diese Optionen **einmalig**
+abgeschaltet; schaltest du danach eine wieder ein, bleibt sie ein.
 
 ### „IP-Adresse für Port 9100" – wofür ist das da?
 
@@ -228,8 +257,9 @@ Beispielbefehle für CUPS, Windows, macOS und die Kommandozeile.
 * **Netzwerküberwachung** – Zustand aller Schnittstellen, Prüfintervall und ob
   bei einem Ausfall ein Hinweiszettel gedruckt wird
   (siehe [10-updates.md](10-updates.md))
-* **IP-Adressen für mehrere Drucker** – automatische Suche und Vergabe freier
-  IP-Adressen, Liste der vergebenen Adressen, Konfliktprüfung
+* **IP-Adressen für mehrere Drucker** – automatische Suche freier Adressen,
+  **Vorschlag Drucker → Adresse zum Prüfen und Bestätigen**, Liste aller
+  Drucker mit ihrer aktuellen Adresse, Konfliktprüfung
   (siehe [07-ausdruckgruppen.md](07-ausdruckgruppen.md))
 * **Updates** – installierte und verfügbare Version, Installation mit
   Konsolenausgabe, Upload einer Datei für Geräte ohne Internet, Backups
@@ -272,7 +302,8 @@ einem Skript oder einem Monitoring-System ansprechen.
 | POST | `/api/printers/<id>/network-test` | Hinweiszettel testweise drucken |
 | GET | `/api/ip-aliases` | vergebene IP-Aliase, Einstellungen, Konflikte |
 | POST | `/api/ip-aliases/scan` | freie Adressen suchen (`{"count": 6}`) |
-| POST | `/api/ip-aliases/assign` | Adressen zuweisen (`{"force": false}`) |
+| POST | `/api/ip-aliases/plan` | Zuordnung vorschlagen, ohne etwas zu ändern |
+| POST | `/api/ip-aliases/assign` | Zuordnung übernehmen (`{"assignments": [{"printer": "...", "address": "..."}]}`) |
 | POST | `/api/ip-aliases/release` | Adresse freigeben (`{"address": "..."}`) |
 | POST | `/api/ip-aliases/check` | vergebene Adressen auf Doppelvergabe prüfen |
 | GET | `/api/update` | Update-Status (installiert/verfügbar/Backups) |

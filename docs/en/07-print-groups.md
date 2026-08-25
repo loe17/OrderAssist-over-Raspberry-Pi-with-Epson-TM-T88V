@@ -105,11 +105,22 @@ From 1.3.4 the extra addresses no longer have to be chosen and created by
 hand. **Web interface → System → "IP addresses for several printers"**:
 
 1. Switch on **"Assign free IP addresses automatically"** and save.
-2. Press **"Assign now"**.
+2. Press **"Propose an assignment"**.
+3. Check the **printer → address** table, edit an address if you want to.
+4. **"Apply assignment"**.
 
-BonBridge then looks for free addresses in its own subnet, creates an IP alias
-for every active printer without a fixed address and enters it at the printer.
-The addresses appear in the table below and on the status slip.
+Only step 4 creates anything. Step 2 searches and shows **which printer would
+get which address** - it changes nothing. That is deliberate: a new printer
+address has to be typed into the POS system afterwards, and that should not
+happen behind a single button press.
+
+On applying, **every address is probed again**. Between the proposal and the
+confirmation there is human time - long enough for someone to switch on a
+phone.
+
+Below the table every printer is listed with its current address, including
+those still on `0.0.0.0`, so the list cannot be misread as "everyone has an
+address".
 
 The same works over SSH:
 

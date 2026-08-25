@@ -395,6 +395,93 @@ def check_discovery_protocols() -> None:
     check(log.total_requests() == 3, "the total counts every protocol")
 
 
+def check_device_matching() -> None:
+    """A scanned device must say which printer already uses it, and how surely.
+
+    This is the part that silently ruins a two-printer setup: two identical
+    TM-T88V differ in nothing a scan can see except the serial number, so
+    "matched by vendor and model" has to be reported as the guess it is
+    rather than as a fact.
+    """
+    match = BonBridge._match_device  # noqa: SLF001 - deliberately tested directly
+
+    identities = [
+        {"id": "kueche", "name": "Küche", "type": "usb",
+         "settings": {"vendor_id": 0x04B8, "product_id": 0x0202, "serial": "X3M4820015"}},
+        {"id": "theke", "name": "Theke", "type": "usb",
+         "settings": {"vendor_id": 0x04B8, "product_id": 0x0202, "serial": "X3M4820099"}},
+    ]
+    first = {"transport": "usb", "vendor_id": 0x04B8, "product_id": 0x0202, "serial": "X3M4820015"}
+    result = match(first, identities)
+    check(result["printer_id"] == "kueche", "the serial number picks the right printer")
+    check(result["by"] == "serial" and not result["ambiguous"], "and it is reported as certain")
+
+    second = {"transport": "usb", "vendor_id": 0x04B8, "product_id": 0x0202, "serial": "X3M4820099"}
+    check(match(second, identities)["printer_id"] == "theke", "the other serial picks the other one")
+
+    stranger = {"transport": "usb", "vendor_id": 0x04B8, "product_id": 0x0202, "serial": "SOMETHINGELSE"}
+    check(
+        match(stranger, identities)["printer_id"] == "",
+        "a third unit of the same model is not claimed by either printer",
+    )
+
+    # Hex strings from config.yaml must compare equal to the integers a scan
+    # reports - otherwise every configured printer looks unassigned.
+    hex_identity = [{"id": "a", "name": "A", "type": "usb",
+                     "settings": {"vendor_id": "0x04b8", "product_id": "0x0202"}}]
+    guess = match(first, hex_identity)
+    check(guess["printer_id"] == "a", "0x04b8 in the configuration matches 1208 from the scan")
+    check(guess["by"] == "model" and guess["ambiguous"], "a model-only match is flagged as a guess")
+
+    path_identity = [{"id": "lp", "name": "LP", "type": "usblp", "settings": {"device": "/dev/usb/lp0"}}]
+    lp = match({"transport": "usblp", "device": "/dev/usb/lp0"}, path_identity)
+    check(lp["printer_id"] == "lp" and lp["by"] == "device", "a device file matches exactly")
+    check(
+        match({"transport": "usblp", "device": "/dev/usb/lp1"}, path_identity)["printer_id"] == "",
+        "a different device file is not claimed",
+    )
+
+
+def check_printing_options_off() -> None:
+    """Nothing prints unless it was switched on - by default and after upgrade."""
+    from bonbridge.config import DEFAULT_PRINTER_OPTIONS, normalise_printer
+
+    for key in ("startup_report", "network_alert", "paper_low_warning",
+                "cut_after_job", "open_drawer_after_job", "reset_before_job"):
+        check(DEFAULT_PRINTER_OPTIONS[key] is False, f"'{key}' is off by default")
+    fresh = normalise_printer({"id": "x"})
+    check(
+        not any(fresh["options"][key] for key in BonBridge.SELF_PRINTING_OPTIONS),
+        "a new printer prints nothing on its own",
+    )
+
+    # The migration has to reach an existing configuration - a changed default
+    # alone would leave the old explicit "true" in config.yaml untouched.
+    from bonbridge import state as state_module
+
+    saved = dict(state_module.section("migrations"))
+    state_module.load().get("migrations", {}).pop("printing_options_off_v1", None)
+    victim = Config(
+        {"printers": [{"id": "old", "options": {"startup_report": True, "network_alert": True}}]},
+        path=TMP / "etc" / "migration-test.yaml",
+    )
+    migrator = BonBridge(victim)
+    migrator._migrate_printing_options()  # noqa: SLF001
+    options = victim.printers[0]["options"]
+    check(
+        not options["startup_report"] and not options["network_alert"],
+        "the upgrade switches the self-printing options off once",
+    )
+    # And it must not fight the user afterwards.
+    options["startup_report"] = True
+    migrator._migrate_printing_options()  # noqa: SLF001
+    check(
+        options["startup_report"] is True,
+        "switching a slip back on after the migration sticks",
+    )
+    state_module.load()["migrations"] = saved
+
+
 def check_ip_aliases() -> None:
     """Address arithmetic, ARP frames and the safety rails around assignment.
 
@@ -463,6 +550,21 @@ def check_ip_aliases() -> None:
     check(entries[0]["dynamic"] and not entries[0]["managed"], "the DHCP address is not ours")
     check(entries[1]["managed"] and entries[1]["label"] == "eth0:bb1", "our own alias is recognised")
     check(entries[1]["prefixlen"] == 24, "the prefix length is read")
+
+    # Applying a mapping must refuse anything that is not ours to hand out.
+    manager_apply = ipalias.AliasManager({})
+    printers_apply = [{"id": "a", "enabled": True, "bind": "0.0.0.0", "name": "Küche"}]
+    outcome = manager_apply.apply(printers_apply, [{"printer": "a", "address": "10.99.99.99"}])
+    check(
+        not outcome["assigned"] and outcome["failed"],
+        "an address outside the device's subnet is refused",
+    )
+    outcome = manager_apply.apply(printers_apply, [{"printer": "nope", "address": "10.0.0.1"}])
+    check(
+        outcome["failed"] and "unknown printer" in outcome["failed"][0]["error"],
+        "an assignment for a printer that does not exist is refused",
+    )
+    check(printers_apply[0]["bind"] == "0.0.0.0", "a refused assignment changes nothing")
 
     # The manager never touches a printer that has a fixed address.
     printers = [
@@ -658,6 +760,8 @@ def main() -> int:
         check_updater()
         check_image_printing()
         check_ip_aliases()
+        check_device_matching()
+        check_printing_options_off()
 
         # 1. the RAW listener accepts a job like a POS application would
         payload = b"\x1b@Bestellung Tisch 4\n2x Cola\n1x Pommes\n\n\n"
@@ -1090,6 +1194,28 @@ def main() -> int:
         )
         conflicts = get_json("/api/ip-aliases/check", method="POST")
         check(conflicts.get("ok") and conflicts.get("conflicts") == [], "conflict check runs clean")
+        planned = get_json("/api/ip-aliases/plan", method="POST", payload={"force": False})
+        check("proposals" in planned, "a plan can be requested over the API")
+        check(
+            get_json("/api/ip-aliases")["aliases"]["aliases"] == [],
+            "planning alone creates no address",
+        )
+        refused = get_json(
+            "/api/ip-aliases/assign",
+            method="POST",
+            payload={"assignments": [{"printer": "theke1", "address": "203.0.113.7"}]},
+        )
+        check(
+            not refused.get("assigned") and refused.get("failed"),
+            "a confirmed address outside the subnet is still refused",
+        )
+
+        # The device scan must carry the serial number and the assignment.
+        devices = get_json("/api/scan")["devices"]
+        check(
+            all("serial" in device and "assigned_to" in device for device in devices),
+            "every scanned device reports a serial field and its assignment",
+        )
 
         # 8c. printing an image
         support = get_json("/api/image/support")["support"]

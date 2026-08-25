@@ -111,11 +111,22 @@ Ab 1.3.4 muss man die Zusatzadressen nicht mehr von Hand aussuchen und
 anlegen. **Weboberfläche → System → „IP-Adressen für mehrere Drucker"**:
 
 1. **„Freie IP-Adressen automatisch zuweisen"** einschalten und speichern.
-2. **„Jetzt zuweisen"** drücken.
+2. **„Zuordnung vorschlagen"** drücken.
+3. Die Tabelle **Drucker → Adresse** prüfen, bei Bedarf eine Adresse ändern.
+4. **„Zuordnung übernehmen"**.
 
-BonBridge sucht dann im eigenen Subnetz freie Adressen, legt für jeden aktiven
-Drucker ohne feste Adresse einen IP-Alias an und trägt ihn beim Drucker ein.
-Die Adressen stehen danach in der Tabelle darunter und auf dem Statusbon.
+Erst Schritt 4 legt etwas an. Schritt 2 sucht nur und zeigt, **welcher Drucker
+welche Adresse bekommen würde** — geändert wird dabei nichts. Das ist Absicht:
+Eine neue Druckeradresse musst du danach im Kassensystem eintragen, und das
+sollte nicht hinter einem einzelnen Knopfdruck passieren.
+
+Beim Übernehmen wird **jede Adresse noch einmal geprüft**. Zwischen Vorschlag
+und Bestätigung liegt menschliche Zeit — lang genug, dass jemand ein Handy
+einschaltet.
+
+Unter der Tabelle steht zusätzlich **jeder Drucker mit seiner aktuellen
+Adresse**, auch die, die noch auf `0.0.0.0` stehen. So lässt sich die Liste
+nicht als „alle haben eine Adresse" missverstehen.
 
 Über SSH geht dasselbe:
 

@@ -287,10 +287,21 @@ class WebApplication:
                 count = 0
             return app.scan_ip_aliases(max(0, min(32, count)))
 
+        @self.route("POST", r"/api/ip-aliases/plan")
+        def ip_alias_plan(*, body: Optional[bytes] = None, **_: Any) -> Dict[str, Any]:
+            payload = self._json_body(body)
+            return app.plan_ip_aliases(force=bool(payload.get("force")))
+
         @self.route("POST", r"/api/ip-aliases/assign")
         def ip_alias_assign(*, body: Optional[bytes] = None, **_: Any) -> Dict[str, Any]:
             payload = self._json_body(body)
-            return app.assign_ip_aliases(force=bool(payload.get("force")))
+            raw = payload.get("assignments")
+            assignments = [
+                {"printer": str(entry.get("printer") or ""), "address": str(entry.get("address") or "")}
+                for entry in raw
+                if isinstance(entry, dict)
+            ] if isinstance(raw, list) else None
+            return app.assign_ip_aliases(force=bool(payload.get("force")), assignments=assignments)
 
         @self.route("POST", r"/api/ip-aliases/release")
         def ip_alias_release(*, body: Optional[bytes] = None, **_: Any) -> Dict[str, Any]:

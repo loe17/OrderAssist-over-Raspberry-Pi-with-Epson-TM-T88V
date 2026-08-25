@@ -43,6 +43,14 @@ const I18N = {
     'pr.devices': 'Gefundene Geräte', 'pr.noDevices': 'Keine Geräte gefunden. Drucker eingeschaltet? Eigenes 24-V-Netzteil angeschlossen?',
     'pr.use': 'Übernehmen', 'pr.options': 'Optionen', 'pr.confirmDelete': 'Drucker wirklich löschen?',
     'pr.connSettings': 'Anschluss-Einstellungen',
+    'pr.device': 'Gerät', 'pr.serial': 'Seriennummer', 'pr.inUse': 'Eingebunden als',
+    'pr.noSerial': 'keine gemeldet', 'pr.free': 'frei',
+    'pr.twins': 'zweites baugleiches Gerät ohne Seriennummer — nicht unterscheidbar',
+    'pr.matchBy.serial': 'über die Seriennummer erkannt',
+    'pr.matchBy.device': 'über die Gerätedatei erkannt',
+    'pr.matchBy.model': 'nur über Hersteller und Modell — bei baugleichen Geräten unsicher',
+    'pr.devicesHint': 'Die Seriennummer ist das Einzige, was zwei baugleiche Drucker unterscheidet. Fehlt sie, kann sich die Zuordnung nach einem Neustart vertauschen — dann hilft nur, die Drucker nacheinander anzuschließen.',
+    'pr.confirmSteal': 'Dieses Gerät ist bereits „%s" zugeordnet.\n\nÜbernimmst du es hier, hat der andere Drucker kein Gerät mehr. Fortfahren?',
 
     'op.startup': 'Statusbon beim Start drucken',
     'op.paperlow': 'Warnung drucken, wenn das Papier zur Neige geht',
@@ -153,6 +161,16 @@ const I18N = {
     'ia.monitor': 'Adressen laufend auf Doppelvergabe prüfen',
     'ia.monitorInterval': 'Prüfintervall (Sekunden)',
     'ia.scan': 'Freie Adressen suchen',
+    'ia.propose': 'Zuordnung vorschlagen',
+    'ia.proposal': 'Vorschlag — noch nichts geändert',
+    'ia.proposalHint': 'So würde BonBridge die Adressen verteilen. Die Adressen lassen sich vorher ändern. Erst mit „Zuordnung übernehmen" werden sie angelegt und beim Drucker eingetragen.',
+    'ia.confirm': 'Zuordnung übernehmen',
+    'ia.discard': 'Verwerfen',
+    'ia.confirmAssign': 'Diese Zuordnung jetzt anlegen?\n\n%s\n\nJede Adresse wird vorher nochmals geprüft. Danach musst du die neuen Adressen im Kassensystem eintragen.',
+    'ia.mapping': 'Alle Drucker und ihre Adressen',
+    'ia.everyAddress': 'jede Adresse des Geräts (0.0.0.0)',
+    'ia.manual': 'von Hand',
+    'ia.disabled': 'inaktiv',
     'ia.assign': 'Jetzt zuweisen',
     'ia.recheck': 'Adressen prüfen',
     'ia.release': 'Freigeben',
@@ -251,6 +269,14 @@ const I18N = {
     'pr.devices': 'Detected devices', 'pr.noDevices': 'No devices found. Is the printer switched on with its own 24 V supply?',
     'pr.use': 'Use', 'pr.options': 'Options', 'pr.confirmDelete': 'Really delete this printer?',
     'pr.connSettings': 'Connection settings',
+    'pr.device': 'Device', 'pr.serial': 'Serial number', 'pr.inUse': 'Assigned to',
+    'pr.noSerial': 'none reported', 'pr.free': 'free',
+    'pr.twins': 'a second identical device without a serial number - indistinguishable',
+    'pr.matchBy.serial': 'matched by serial number',
+    'pr.matchBy.device': 'matched by device file',
+    'pr.matchBy.model': 'matched by vendor and model only - unreliable with identical units',
+    'pr.devicesHint': 'The serial number is the only thing that tells two identical printers apart. Without it the assignment can swap after a reboot - the only remedy is to attach the printers one after the other.',
+    'pr.confirmSteal': 'This device is already assigned to "%s".\n\nTaking it here leaves that printer without a device. Continue?',
 
     'op.startup': 'Print a status slip on start-up',
     'op.paperlow': 'Print a warning when the paper runs low',
@@ -361,6 +387,16 @@ const I18N = {
     'ia.monitor': 'Keep checking the addresses for duplicates',
     'ia.monitorInterval': 'Check interval (seconds)',
     'ia.scan': 'Look for free addresses',
+    'ia.propose': 'Propose an assignment',
+    'ia.proposal': 'Proposal - nothing changed yet',
+    'ia.proposalHint': 'This is how BonBridge would distribute the addresses. They can be edited first. Only "Apply assignment" actually creates them and enters them at the printer.',
+    'ia.confirm': 'Apply assignment',
+    'ia.discard': 'Discard',
+    'ia.confirmAssign': 'Create this assignment now?\n\n%s\n\nEvery address is probed again first. Afterwards you have to enter the new addresses in the POS system.',
+    'ia.mapping': 'All printers and their addresses',
+    'ia.everyAddress': 'every address of the device (0.0.0.0)',
+    'ia.manual': 'set by hand',
+    'ia.disabled': 'inactive',
     'ia.assign': 'Assign now',
     'ia.recheck': 'Check addresses',
     'ia.release': 'Release',
@@ -439,7 +475,7 @@ const HELP = {
     'transport.baudrate': 'Übertragungsgeschwindigkeit der seriellen Schnittstelle. Muss mit den DIP-Schaltern am Drucker übereinstimmen — bei Epson meist 38400.',
     'transport.host': 'IP-Adresse des Netzwerkdruckers, mit dem sich BonBridge verbinden soll.',
     'transport.port': 'Port des Netzwerkdruckers, praktisch immer 9100.',
-    'op.startup': 'Druckt direkt nach dem Einschalten einen Bon mit IP-Adresse, Port und den Werten fürs Kassensystem. Praktisch, weil das Gerät keinen Bildschirm hat. Die Einstellung bleibt auch nach einem Stromausfall erhalten.',
+    'op.startup': 'Druckt direkt nach dem Einschalten einen Bon mit IP-Adresse, Port und den Werten fürs Kassensystem. Praktisch, weil das Gerät keinen Bildschirm hat — standardmäßig aber aus, damit im Laden nichts von allein aus dem Drucker kommt. Denselben Bon gibt es jederzeit über „Übersicht → Statusbon drucken". Die Einstellung bleibt auch nach einem Stromausfall erhalten.',
     'op.paperlow': 'Sobald der Drucker "Papier fast leer" meldet, wird einmalig ein Hinweiszettel gedruckt. Wird erst wieder gedruckt, wenn zwischendurch neues Papier eingelegt wurde.',
     'op.cut': 'Hängt an jeden Auftrag einen Schnittbefehl an. Nur einschalten, wenn das Kassensystem selbst nicht schneidet — sonst wird zweimal geschnitten.',
     'op.drawer': 'Löst nach jedem Auftrag den Kassenladen-Impuls aus. Für Küchendrucker in der Regel unerwünscht.',
@@ -500,7 +536,7 @@ const HELP = {
     'transport.baudrate': 'Speed of the serial line. Must match the DIP switches on the printer - usually 38400 on Epson.',
     'transport.host': 'IP address of the network printer BonBridge should connect to.',
     'transport.port': 'Port of the network printer, practically always 9100.',
-    'op.startup': 'Prints a slip with the IP address, port and POS settings right after power-up. Useful because the device has no screen. The setting survives a power cut.',
+    'op.startup': 'Prints a slip with the IP address, port and POS settings right after power-up. Useful because the device has no screen - but off by default, so nothing comes out of the printer on its own in a shop. The same slip is available any time from "Overview -> Print status slip". The setting survives a power cut.',
     'op.paperlow': 'Prints a one-off notice as soon as the printer reports "paper near end". It is only printed again after new paper has been loaded.',
     'op.cut': 'Appends a cut command to every job. Only enable it when the POS application does not cut by itself - otherwise it cuts twice.',
     'op.drawer': 'Fires the cash drawer pulse after every job. Usually undesirable for a kitchen printer.',
@@ -776,13 +812,39 @@ async function renderPrinters() {
     '<button class="act" onclick="scanDevices()">' + t('pr.scan') + '</button>' +
     '<button class="act" onclick="addPrinter()">' + t('pr.add') + '</button></div>';
   if (STATE.devices.length) {
-    html += '<h3>' + t('pr.devices') + '</h3><table>';
+    html += '<h3>' + t('pr.devices') + '</h3><table>' +
+      '<tr><th>' + t('pr.transport') + '</th><th>' + t('pr.device') + '</th><th>' +
+      t('pr.serial') + '</th><th>' + t('pr.inUse') + '</th><th></th></tr>';
     STATE.devices.forEach((device, index) => {
-      html += '<tr><td>' + esc(device.transport) + '</td><td>' + esc(device.label || '') +
-        (device.serial ? '<br><span class="muted">SN ' + esc(device.serial) + '</span>' : '') + '</td>' +
-        '<td style="width:6rem"><button class="act" onclick="useDevice(' + index + ')">' + t('pr.use') + '</button></td></tr>';
+      // The serial number is the only field that tells two identical printers
+      // apart, so it gets its own column and is stated even when absent.
+      const serial = device.serial
+        ? '<code>' + esc(device.serial) + '</code>'
+        : '<span class="muted">' + t('pr.noSerial') + '</span>' +
+          (device.indistinguishable
+            ? '<br><span class="dot warn"></span><span class="muted">' + esc(t('pr.twins')) + '</span>'
+            : '');
+      let used = '<span class="muted">' + t('pr.free') + '</span>';
+      if (device.assigned_to) {
+        used = '<span class="dot ' + (device.match_by === 'model' ? 'warn' : 'ok') + '"></span>' +
+          esc(device.assigned_name || device.assigned_to) +
+          '<br><span class="muted">' + t('pr.matchBy.' + device.match_by) + '</span>';
+      }
+      // "Use" used to always target the first printer, which is exactly wrong
+      // once there are several - so the target is picked here, per row.
+      const targets = (data.printers || []);
+      const picker = targets.length > 1
+        ? '<select id="useTarget' + index + '" style="margin-bottom:.3rem">' +
+          targets.map((p) => '<option value="' + esc(p.id) + '"' +
+            (p.id === device.assigned_to ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') +
+          '</select>'
+        : '';
+      html += '<tr><td>' + esc(device.transport) + '</td><td>' + esc(device.label || '') + '</td>' +
+        '<td>' + serial + '</td><td>' + used + '</td>' +
+        '<td style="width:11rem">' + picker + '<button class="act" onclick="useDevice(' + index + ')">' +
+        t('pr.use') + '</button></td></tr>';
     });
-    html += '</table>';
+    html += '</table><div class="fieldhelp">' + esc(t('pr.devicesHint')) + '</div>';
   } else if (STATE.scanned) {
     html += '<p class="muted">' + t('pr.noDevices') + '</p>';
   }
@@ -914,7 +976,14 @@ async function scanDevices() {
 async function useDevice(index) {
   const device = STATE.devices[index];
   if (!(STATE.overview.printers || []).length) { await addPrinter(); }
-  const target = (STATE.overview.printers[0] || {}).id;
+  const picker = document.getElementById('useTarget' + index);
+  const target = picker ? picker.value : (STATE.overview.printers[0] || {}).id;
+  // Taking a device away from another printer leaves that one without a
+  // device, which is worth one question rather than a silent surprise.
+  if (device.assigned_to && device.assigned_to !== target) {
+    const other = device.assigned_name || device.assigned_to;
+    if (!confirm(t('pr.confirmSteal').replace('%s', other))) return;
+  }
   const transport = { type: device.transport };
   if (device.vendor_id != null) { transport.vendor_id = '0x' + device.vendor_id_hex; transport.product_id = '0x' + device.product_id_hex; }
   if (device.serial) transport.serial = device.serial;
@@ -1784,8 +1853,8 @@ function aliasCard(config) {
     '</div></div>' +
     '<div class="btnbar">' +
     '<button class="act primary" onclick="saveAliasSettings()">' + t('sy.save') + '</button>' +
+    '<button class="act" onclick="planAliases(false)">' + t('ia.propose') + '</button>' +
     '<button class="act" onclick="scanAliases()">' + t('ia.scan') + '</button>' +
-    '<button class="act" onclick="assignAliases(false)">' + t('ia.assign') + '</button>' +
     '<button class="act" onclick="recheckAliases()">' + t('ia.recheck') + '</button>' +
     '</div>' +
     '<div id="iaBody" class="muted" style="margin-top:.8rem">…</div>' +
@@ -1803,6 +1872,29 @@ function aliasBody(state) {
     (state.gateway ? kv(t('ia.gateway'), esc(state.gateway)) : '') +
     '</div>';
 
+  // The proposal: which printer would get which address.  Nothing has been
+  // changed at this point - the addresses are editable and only what is
+  // confirmed here is actually created.
+  if ((state.plan || []).length) {
+    html += '<h3>' + t('ia.proposal') + '</h3>' +
+      '<p class="fieldhelp">' + esc(t('ia.proposalHint')) + '</p>' +
+      '<table><tr><th>' + t('ia.printer') + '</th><th>' + t('ia.address') +
+      '</th><th>' + t('ia.method') + '</th></tr>';
+    state.plan.forEach((entry, index) => {
+      html += '<tr><td>' + esc(entry.name || entry.printer) +
+        '<br><span class="muted"><code>' + esc(entry.printer) + '</code></span></td>' +
+        '<td><input id="planAddr' + index + '" data-printer="' + esc(entry.printer) + '" value="' +
+        esc(entry.address || '') + '" style="max-width:11rem"></td>' +
+        '<td>' + (entry.address
+          ? '<span class="dot ok"></span>' + esc(entry.method || '')
+          : '<span class="dot error"></span>' + esc(entry.error || '')) + '</td></tr>';
+    });
+    html += '</table><div class="btnbar">' +
+      '<button class="act primary" onclick="confirmPlan(' + state.plan.length + ')">' +
+      t('ia.confirm') + '</button>' +
+      '<button class="act" onclick="discardPlan()">' + t('ia.discard') + '</button></div>';
+  }
+
   html += '<h3>' + t('ia.assigned') + '</h3>';
   if (!(state.aliases || []).length) {
     html += '<p class="muted">' + esc(t('ia.none')) + '</p>';
@@ -1818,9 +1910,28 @@ function aliasBody(state) {
         dot = '<span class="dot error"></span>' + t('ia.missing');
       }
       html += '<tr><td><code>' + esc(entry.address) + '/' + esc(entry.prefixlen) + '</code></td>' +
-        '<td>' + esc(entry.printer || '-') + '</td><td>' + dot + '</td>' +
+        '<td>' + esc(entry.printer_name || entry.printer || '-') +
+        (entry.printer ? '<br><span class="muted"><code>' + esc(entry.printer) + '</code></span>' : '') +
+        '</td><td>' + dot + '</td>' +
         '<td><button class="act danger" onclick="releaseAlias(\'' + esc(entry.address) + '\')">' +
         t('ia.release') + '</button></td></tr>';
+    });
+    html += '</table>';
+  }
+
+  // Printers that are still on 0.0.0.0 - stated plainly so the table is not
+  // read as "everything has an address".
+  if ((state.printers || []).length) {
+    html += '<h3>' + t('ia.mapping') + '</h3><table><tr><th>' + t('ia.printer') +
+      '</th><th>' + t('ia.address') + '</th></tr>';
+    state.printers.forEach((printer) => {
+      const bind = printer.bind && printer.bind !== '0.0.0.0'
+        ? '<code>' + esc(printer.bind) + '</code>' +
+          (printer.managed ? '' : ' <span class="muted">' + t('ia.manual') + '</span>')
+        : '<span class="muted">' + t('ia.everyAddress') + '</span>';
+      html += '<tr><td>' + esc(printer.name) +
+        (printer.enabled ? '' : ' <span class="muted">(' + t('ia.disabled') + ')</span>') +
+        '</td><td>' + bind + '</td></tr>';
     });
     html += '</table>';
   }
@@ -1880,23 +1991,52 @@ async function scanAliases() {
   } catch (e) { toast(t('common.error') + ': ' + e.message, true); await loadAliases(); }
 }
 
-async function assignAliases(force) {
+/* Two steps on purpose: propose, then confirm.  Handing a printer a new
+ * address means somebody has to retype it in the POS system afterwards - that
+ * is not a change to make behind a single button press. */
+async function planAliases(force) {
+  const box = document.getElementById('iaBody');
+  if (box) box.innerHTML = '<span class="muted">' + esc(t('ia.searching')) + '</span>';
+  try {
+    const result = await api('/api/ip-aliases/plan',
+      { method: 'POST', body: JSON.stringify({ force: !!force }) });
+    if (!(result.proposals || []).length) {
+      if ((result.note || '').indexOf('one printer') !== -1) {
+        if (confirm(t('ia.onePrinter') + '\n\n' + t('ia.force'))) { await planAliases(true); return; }
+      } else {
+        toast(t('ia.nothing'));
+      }
+    }
+    await loadAliases();
+  } catch (e) { toast(t('common.error') + ': ' + e.message, true); await loadAliases(); }
+}
+
+async function confirmPlan(count) {
+  const assignments = [];
+  for (let index = 0; index < count; index++) {
+    const field = document.getElementById('planAddr' + index);
+    if (!field || !field.value.trim()) continue;
+    assignments.push({ printer: field.getAttribute('data-printer'), address: field.value.trim() });
+  }
+  if (!assignments.length) { toast(t('ia.nothing')); return; }
+  const lines = assignments.map((a) => a.printer + '  ->  ' + a.address).join('\n');
+  if (!confirm(t('ia.confirmAssign').replace('%s', lines))) return;
   const box = document.getElementById('iaBody');
   if (box) box.innerHTML = '<span class="muted">' + esc(t('ia.searching')) + '</span>';
   try {
     const result = await api('/api/ip-aliases/assign',
-      { method: 'POST', body: JSON.stringify({ force: !!force }) });
-    const count = (result.assigned || []).length;
-    if (count) {
-      toast(t('ia.assignedN').replace('%s', count));
-    } else if ((result.note || '').indexOf('one printer') !== -1) {
-      if (confirm(t('ia.onePrinter') + '\n\n' + t('ia.force'))) { await assignAliases(true); return; }
-    } else {
-      toast(t('ia.nothing'));
-    }
+      { method: 'POST', body: JSON.stringify({ assignments: assignments }) });
+    (result.failed || []).forEach((entry) => toast(entry.printer + ': ' + entry.error, true));
+    if ((result.assigned || []).length) toast(t('ia.assignedN').replace('%s', result.assigned.length));
     await reload(true);
     await loadAliases();
   } catch (e) { toast(t('common.error') + ': ' + e.message, true); await loadAliases(); }
+}
+
+function discardPlan() {
+  if (STATE.aliases) STATE.aliases.plan = [];
+  const box = document.getElementById('iaBody');
+  if (box && STATE.aliases) box.innerHTML = aliasBody(STATE.aliases);
 }
 
 async function releaseAlias(address) {
@@ -1919,7 +2059,8 @@ async function recheckAliases() {
 }
 
 window.saveAliasSettings = saveAliasSettings; window.scanAliases = scanAliases;
-window.assignAliases = assignAliases; window.releaseAlias = releaseAlias;
+window.planAliases = planAliases; window.confirmPlan = confirmPlan;
+window.discardPlan = discardPlan; window.releaseAlias = releaseAlias;
 window.recheckAliases = recheckAliases;
 
 /* ---- updates ---------------------------------------------------------- */
