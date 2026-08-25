@@ -77,7 +77,10 @@ andere Software könnte sie benutzen.
   Ausprobieren.
 * **Mehrere Ausdruckgruppen auf einem Gerät.** Kassensysteme adressieren
   Drucker nur über die IP – BonBridge kann deshalb jeden Drucker an eine
-  eigene IP-Adresse binden, alle auf Port 9100.
+  eigene IP-Adresse binden, alle auf Port 9100. Die Adressen **sucht
+  BonBridge selbst**, per ARP-Prüfung nach RFC 5227, und prüft sie danach
+  weiter – eine spätere Doppelvergabe durch DHCP wird gemeldet, statt still
+  Bons zu verschlucken.
 * **Funktionsschalter.** Cutter, Kassenlade, Signalton, Barcode, QR, Grafik –
   jeweils automatisch erkannt und in der Weboberfläche überschreibbar.
 * **Mehrere Anschlussarten:** libusb (auch für Drucker, die nie ein

@@ -272,6 +272,35 @@ class WebApplication:
             payload = self._json_body(body)
             return app.test_network_alert(printer_id, bool(payload.get("online")))
 
+        # -- automatic IP aliases --------------------------------------
+
+        @self.route("GET", r"/api/ip-aliases")
+        def ip_alias_route(**_: Any) -> Dict[str, Any]:
+            return {"ok": True, "aliases": app.ip_alias_state()}
+
+        @self.route("POST", r"/api/ip-aliases/scan")
+        def ip_alias_scan(*, body: Optional[bytes] = None, **_: Any) -> Dict[str, Any]:
+            payload = self._json_body(body)
+            try:
+                count = int(payload.get("count") or 0)
+            except (TypeError, ValueError):
+                count = 0
+            return app.scan_ip_aliases(max(0, min(32, count)))
+
+        @self.route("POST", r"/api/ip-aliases/assign")
+        def ip_alias_assign(*, body: Optional[bytes] = None, **_: Any) -> Dict[str, Any]:
+            payload = self._json_body(body)
+            return app.assign_ip_aliases(force=bool(payload.get("force")))
+
+        @self.route("POST", r"/api/ip-aliases/release")
+        def ip_alias_release(*, body: Optional[bytes] = None, **_: Any) -> Dict[str, Any]:
+            payload = self._json_body(body)
+            return app.release_ip_alias(str(payload.get("address") or ""))
+
+        @self.route("POST", r"/api/ip-aliases/check")
+        def ip_alias_check(**_: Any) -> Dict[str, Any]:
+            return app.check_ip_aliases()
+
         # -- software updates ------------------------------------------
 
         @self.route("GET", r"/api/update")

@@ -4,6 +4,62 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.3.4] - 2026-08-24
+
+BonBridge finds its own IP addresses.
+
+### Added
+
+- **Automatic IP aliases.** A POS application addresses a printer as
+  `<ip>:9100` and cannot change the port, so several printers on one device
+  need several IP addresses. BonBridge now looks for free addresses itself and
+  assigns one to every enabled printer that has none - no systemd unit per
+  address, no manual `ping` to see whether an address is taken.
+  - "Free" is decided by **ARP probing per RFC 5227**: an ARP request whose
+    sender address is `0.0.0.0`, sent three times, so a single lost broadcast
+    cannot make a used address look free. A probe that claimed the address it
+    asks about would poison every ARP cache on the segment; this one does not.
+    ARP is used rather than ping because a host may ignore ICMP and still be
+    perfectly present - a ping check would happily hand out an address that a
+    Windows PC is using.
+  - Candidates are taken from the **top of the subnet** by default, which is
+    where DHCP pools least often reach. A range can be pinned explicitly
+    (`192.168.1.240-192.168.1.250`).
+  - The assignment **survives a reboot** without systemd units: what BonBridge
+    created is recorded in `state.json` and re-created at start-up - after
+    probing again. An address that was taken over in the meantime is not
+    re-claimed but dropped, and the printer falls back to `0.0.0.0` so it keeps
+    printing while the conflict is reported.
+  - **The addresses stay under observation.** Every five minutes each alias is
+    probed again; an answer from a foreign MAC address becomes an error on the
+    health page naming the intruder. That is the failure this feature would
+    otherwise introduce: an address that is free today can be leased by the
+    router tomorrow, and receipts would then vanish with nothing looking
+    broken. BonBridge cannot prevent that - only notice it and say so.
+  - Switched **off by default**: it changes the network configuration of the
+    machine, and that should be a decision, not the side effect of an update.
+- New card *System → IP addresses for several printers*: switch, interface,
+  range, probe count, monitor interval, plus buttons to scan, assign, re-check
+  and release. The scan result lists every probed address with its verdict and
+  the MAC of whoever answered.
+- New API endpoints `GET /api/ip-aliases` and `POST /api/ip-aliases/{scan,
+  assign, release, check}`.
+- New command `bonbridge aliases [--assign] [--force] [--release ADDRESS]` for
+  the same job over SSH, printing the probe results instead of hiding them in a
+  log file.
+- Health checks for a duplicate address, a vanished alias and a printer still
+  waiting for one.
+- Documentation: the print-group chapter now leads with the automatic route and
+  keeps the manual one, in German and English.
+
+### Notes
+
+- A single printer is deliberately left on `0.0.0.0`: it then answers on every
+  address of the device, which needs no extra address at all. `--force` (or the
+  confirmation in the web interface) assigns one anyway.
+- Addresses entered by hand are never touched, and only addresses BonBridge
+  itself created can be released.
+
 ## [1.3.3] - 2026-08-22
 
 Two ways a reply can be sent and still never arrive.

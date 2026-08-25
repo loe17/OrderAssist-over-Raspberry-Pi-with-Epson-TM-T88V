@@ -170,6 +170,20 @@ is not needed:
 * [RFC 3805 - Printer MIB v2](https://datatracker.ietf.org/doc/html/rfc3805) (`prtGeneralPrinterName`)
 * Epson's IANA enterprise number is **1248** -> `sysObjectID = 1.3.6.1.4.1.1248`
 
+### ARP and address conflicts
+
+The automatic IP alias assignment in
+[`ipalias.py`](../../src/bonbridge/ipalias.py) verifies an address the way the
+standard prescribes - with sender address `0.0.0.0`, so the probe does not
+claim the address it is asking about:
+
+* [RFC 5227 - IPv4 Address Conflict Detection](https://datatracker.ietf.org/doc/html/rfc5227)
+  (probe layout, number and spacing of requests, ongoing conflict detection)
+* [RFC 826 - An Ethernet Address Resolution Protocol](https://datatracker.ietf.org/doc/html/rfc826)
+  (packet layout)
+* [`ip-address(8)`](https://man7.org/linux/man-pages/man8/ip-address.8.html)
+  (iproute2, creating and removing the addresses with a label)
+
 ### IEEE 1284 device ID
 
 Read from `/sys/class/usbmisc/lp*/device/ieee1284_id`

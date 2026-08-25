@@ -143,6 +143,42 @@ const I18N = {
     'nw.perPrinterHint': 'Welcher Drucker den Hinweis ausdruckt, stellst du je Drucker unter „Drucker → Optionen“ ein.',
     'nw.checkNow': 'Jetzt prüfen', 'nw.testSlip': 'Hinweiszettel testen',
 
+    'ia.title': 'IP-Adressen für mehrere Drucker',
+    'ia.explain': 'Kassensysteme unterscheiden Drucker nur über die IP-Adresse — der Port ist fest 9100. Mehrere Drucker an einem Gerät brauchen deshalb mehrere IP-Adressen. BonBridge kann freie Adressen selbst suchen (ARP-Prüfung nach RFC 5227) und den Druckern zuweisen.',
+    'ia.enabled': 'Freie IP-Adressen automatisch zuweisen',
+    'ia.interface': 'Netzwerkschnittstelle',
+    'ia.range': 'Adressbereich',
+    'ia.rangeAuto': 'automatisch (oberes Ende des Subnetzes)',
+    'ia.attempts': 'ARP-Prüfungen je Adresse',
+    'ia.monitor': 'Adressen laufend auf Doppelvergabe prüfen',
+    'ia.monitorInterval': 'Prüfintervall (Sekunden)',
+    'ia.scan': 'Freie Adressen suchen',
+    'ia.assign': 'Jetzt zuweisen',
+    'ia.recheck': 'Adressen prüfen',
+    'ia.release': 'Freigeben',
+    'ia.assigned': 'Vergebene Adressen',
+    'ia.none': 'Noch keine Adresse automatisch vergeben.',
+    'ia.candidates': 'Ergebnis der letzten Suche',
+    'ia.free': 'frei',
+    'ia.used': 'belegt',
+    'ia.byWhom': 'antwortet',
+    'ia.method': 'Prüfung',
+    'ia.printer': 'Drucker',
+    'ia.address': 'Adresse',
+    'ia.state': 'Zustand',
+    'ia.present': 'aktiv',
+    'ia.missing': 'fehlt',
+    'ia.conflict': 'Konflikt',
+    'ia.searching': 'Adressen werden geprüft … das dauert ein paar Sekunden.',
+    'ia.assignedN': '%s Adresse(n) zugewiesen',
+    'ia.nothing': 'Nichts zu tun — alle aktiven Drucker haben schon eine Adresse.',
+    'ia.onePrinter': 'Nur ein Drucker aktiv — eine eigene Adresse ist dafür nicht nötig. Mit „Trotzdem zuweisen" geht es dennoch.',
+    'ia.force': 'Auch bei nur einem Drucker zuweisen',
+    'ia.confirmRelease': 'Adresse %s wirklich freigeben?\n\nDer zugehörige Drucker ist danach wieder unter jeder IP dieses Geräts erreichbar. Trage die Adresse im Kassensystem entsprechend nach.',
+    'ia.dhcpWarn': 'Wichtig: Eine Adresse, die heute frei ist, kann der Router morgen per DHCP vergeben. Nimm den benutzten Bereich im Router aus dem DHCP-Bereich heraus — BonBridge prüft laufend nach und meldet eine Doppelvergabe, aber verhindern kann es sie nicht.',
+    'ia.noRaw': 'Kein Raw-Socket verfügbar — geprüft wird ersatzweise per Ping. Das ist deutlich unzuverlässiger, weil viele Geräte Ping nicht beantworten.',
+    'ia.gateway': 'Router',
+
     'up.title': 'Updates', 'up.installed': 'Installiert', 'up.latest': 'Verfügbar',
     'up.checkedAt': 'Zuletzt geprüft', 'up.repo': 'Quelle',
     'up.available': 'Update verfügbar', 'up.current': 'Aktuell — kein Update nötig',
@@ -315,6 +351,42 @@ const I18N = {
     'nw.perPrinterHint': 'Which printer prints the notice is set per printer under "Printers -> Options".',
     'nw.checkNow': 'Check now', 'nw.testSlip': 'Test the notice slip',
 
+    'ia.title': 'IP addresses for several printers',
+    'ia.explain': 'POS systems tell printers apart by IP address only - the port is fixed at 9100. Several printers on one device therefore need several IP addresses. BonBridge can look for free addresses itself (ARP probe per RFC 5227) and hand them to the printers.',
+    'ia.enabled': 'Assign free IP addresses automatically',
+    'ia.interface': 'Network interface',
+    'ia.range': 'Address range',
+    'ia.rangeAuto': 'automatic (top end of the subnet)',
+    'ia.attempts': 'ARP probes per address',
+    'ia.monitor': 'Keep checking the addresses for duplicates',
+    'ia.monitorInterval': 'Check interval (seconds)',
+    'ia.scan': 'Look for free addresses',
+    'ia.assign': 'Assign now',
+    'ia.recheck': 'Check addresses',
+    'ia.release': 'Release',
+    'ia.assigned': 'Assigned addresses',
+    'ia.none': 'No address assigned automatically yet.',
+    'ia.candidates': 'Result of the last scan',
+    'ia.free': 'free',
+    'ia.used': 'in use',
+    'ia.byWhom': 'answered by',
+    'ia.method': 'Probe',
+    'ia.printer': 'Printer',
+    'ia.address': 'Address',
+    'ia.state': 'State',
+    'ia.present': 'active',
+    'ia.missing': 'missing',
+    'ia.conflict': 'conflict',
+    'ia.searching': 'Probing addresses ... this takes a few seconds.',
+    'ia.assignedN': '%s address(es) assigned',
+    'ia.nothing': 'Nothing to do - every active printer already has an address.',
+    'ia.onePrinter': 'Only one printer is active - it does not need an address of its own. "Assign anyway" does it regardless.',
+    'ia.force': 'Assign even with only one printer',
+    'ia.confirmRelease': 'Really release address %s?\n\nIts printer will then be reachable under every IP of this device again. Update the address in the POS system accordingly.',
+    'ia.dhcpWarn': 'Important: an address that is free today can be handed out by the router via DHCP tomorrow. Exclude the range used here from the router\'s DHCP pool - BonBridge keeps checking and reports a duplicate, but it cannot prevent one.',
+    'ia.noRaw': 'No raw socket available - ping is used instead. That is markedly less reliable because many devices do not answer ping.',
+    'ia.gateway': 'Router',
+
     'up.title': 'Updates', 'up.installed': 'Installed', 'up.latest': 'Available',
     'up.checkedAt': 'Last checked', 'up.repo': 'Source',
     'up.available': 'Update available', 'up.current': 'Up to date - nothing to do',
@@ -356,7 +428,7 @@ const I18N = {
 const HELP = {
   de: {
     'pr.name': 'Frei wählbarer Name, z. B. "Küche" oder "Theke". Er erscheint auf Testdrucken, im Support-Bericht und in der mDNS-Ankündigung. Auf die Funktion hat er keinen Einfluss.',
-    'pr.bind': 'An welche IP-Adresse dieses Geräts der Drucker-Port 9100 gebunden wird.\n\n0.0.0.0 (Standard) = alle Adressen. Das ist bei EINEM Drucker immer richtig — das Kassensystem erreicht ihn dann unter jeder IP des Geräts.\n\nEine feste IP trägst du nur ein, wenn MEHRERE Drucker an diesem Gerät hängen: Kassensysteme wie OrderAssist unterscheiden Drucker ausschließlich über die IP-Adresse, der Port ist fest 9100. Jeder Drucker braucht deshalb eine eigene IP. Diese Zusatz-IP muss vorher auf dem Gerät angelegt werden (siehe Doku "Mehrere Drucker").',
+    'pr.bind': 'An welche IP-Adresse dieses Geräts der Drucker-Port 9100 gebunden wird.\n\n0.0.0.0 (Standard) = alle Adressen. Das ist bei EINEM Drucker immer richtig — das Kassensystem erreicht ihn dann unter jeder IP des Geräts.\n\nEine feste IP trägst du nur ein, wenn MEHRERE Drucker an diesem Gerät hängen: Kassensysteme wie OrderAssist unterscheiden Drucker ausschließlich über die IP-Adresse, der Port ist fest 9100. Jeder Drucker braucht deshalb eine eigene IP. Diese Zusatz-IP kann BonBridge unter „System → IP-Adressen für mehrere Drucker" selbst suchen und anlegen — oder du trägst sie von Hand ein (siehe Doku "Mehrere Drucker").',
     'pr.transport': 'Wie der Drucker angeschlossen ist. "automatisch" sucht bei jedem Start das plausibelste lokale Gerät — für den Normalfall richtig.\n\nusb = über libusb, funktioniert auch bei Druckern ohne /dev/usb/lp0.\nusblp = klassisches Kernel-Gerät /dev/usb/lp0.\nseriell = RS-232 oder USB-Seriell-Adapter.\nnetzwerk = ein Drucker, der bereits selbst im Netz hängt.',
     'pr.profile': 'Bestimmt Zeichen pro Zeile, Codepages und welche Funktionen der Drucker hat. "automatisch erkennen" liest die USB-Kennung und die Drucker-ID aus und wählt selbst — nur ändern, wenn die Erkennung danebenliegt.',
     'pr.enabled': 'Nimmt den Drucker in Betrieb. Deaktiviert bleibt die Konfiguration erhalten, es wird aber kein Port geöffnet und nichts gedruckt.',
@@ -396,6 +468,12 @@ const HELP = {
     'di.lpdOn': 'Nimmt Verbindungen auf TCP 515 an (klassischer Netzwerkdruck). Dient der Auffindbarkeit und erlaubt zusätzlich echtes Drucken per LPR.',
     'di.watchOn': 'Öffnet zusätzlich passive Lauschposten auf IPP (631), ePOS (8008) und SSDP (1900). Diese antworten nie — sie halten nur fest, wer angeklopft hat. Genau das zeigt, welches Protokoll eine App tatsächlich benutzt.',
     'op.netalert': 'Druckt auf DIESEM Drucker einen Hinweiszettel, wenn das Gerät seine Netzwerkverbindung verliert oder wiederbekommt. Sinnvoll, weil das Kassensystem dann nicht mehr drucken kann und sonst niemand erfährt, warum. Ist gerade kein Drucker verbunden, wird nichts gedruckt und auch nichts nachgeholt.',
+    'ia.enabled': 'Schaltet die automatische Vergabe ein. BonBridge sucht dann beim Start und auf Knopfdruck freie IP-Adressen im eigenen Subnetz und legt für jeden aktiven Drucker ohne feste Adresse einen IP-Alias an. Adressen, die du selbst eingetragen hast, werden nie angefasst. Standardmäßig aus, weil das die Netzwerkkonfiguration des Geräts verändert — das soll eine Entscheidung sein, kein Nebeneffekt eines Updates.',
+    'ia.interface': 'Auf welcher Schnittstelle die Zusatzadressen angelegt werden. „auto" nimmt die Schnittstelle, die bereits die Hauptadresse trägt — bei LAN eth0, beim Pi Zero 2 W meist wlan0.',
+    'ia.range': 'Wo gesucht wird. „auto" geht vom oberen Ende des Subnetzes abwärts, weil DHCP-Bereiche dort am seltensten hinreichen. Ein fester Bereich lässt sich als 192.168.1.240-192.168.1.250 eintragen — sinnvoll, wenn du im Router genau diesen Bereich vom DHCP ausgenommen hast.',
+    'ia.attempts': 'Wie viele ARP-Anfragen je Adresse gesendet werden. Ein einzelner verlorener Broadcast würde eine belegte Adresse frei aussehen lassen; drei Versuche sind der Wert aus RFC 5227.',
+    'ia.monitor': 'Prüft die vergebenen Adressen im Hintergrund weiter. Nötig, weil eine heute freie Adresse morgen per DHCP an ein anderes Gerät gehen kann — dann verschwinden Bons, ohne dass irgendetwas kaputt aussieht. Der Konflikt erscheint dann unter „Alle Prüfungen".',
+    'ia.monitorInterval': 'Abstand zwischen den Nachprüfungen. 300 Sekunden reichen: eine Doppelvergabe passiert nicht im Sekundentakt, und jede Prüfung kostet ein paar Broadcasts.',
     'nw.interval': 'Wie oft der Netzwerkzustand geprüft wird. 60 Sekunden ist ein guter Kompromiss: schnell genug, um einen Ausfall früh zu bemerken, sparsam genug für einen kleinen Raspberry Pi. Minimum 10 Sekunden.',
     'nw.confirmations': 'Wie oft der neue Zustand hintereinander bestätigt werden muss, bevor gedruckt wird. Bei 2 führt ein kurzer WLAN-Wechsel nicht zu einem Zettel. Bei 1 wird sofort gemeldet.',
     'nw.enabled': 'Schaltet die gesamte Überwachung ein oder aus. Ausgeschaltet wird der Netzwerkzustand weder geprüft noch angezeigt.',
@@ -411,7 +489,7 @@ const HELP = {
   },
   en: {
     'pr.name': 'Free-text name such as "Kitchen" or "Bar". It appears on test prints, in the support report and in the mDNS announcement. It has no effect on behaviour.',
-    'pr.bind': 'Which IP address of this device the printer port 9100 is bound to.\n\n0.0.0.0 (default) = all addresses. With ONE printer this is always right - the POS application reaches it on any IP of the device.\n\nSet a fixed IP only when SEVERAL printers are attached to this device: POS systems such as OrderAssist tell printers apart by IP address only, the port is fixed at 9100. Each printer therefore needs its own IP. That extra IP has to be created on the device first (see the "Several printers" documentation).',
+    'pr.bind': 'Which IP address of this device the printer port 9100 is bound to.\n\n0.0.0.0 (default) = all addresses. With ONE printer this is always right - the POS application reaches it on any IP of the device.\n\nSet a fixed IP only when SEVERAL printers are attached to this device: POS systems such as OrderAssist tell printers apart by IP address only, the port is fixed at 9100. Each printer therefore needs its own IP. BonBridge can find and create that extra IP itself under "System -> IP addresses for several printers" - or you enter it by hand (see the "Several printers" documentation).',
     'pr.transport': 'How the printer is attached. "detect automatically" picks the most plausible local device at every start - correct for the normal case.\n\nusb = via libusb, also works for printers without /dev/usb/lp0.\nusblp = the classic kernel device /dev/usb/lp0.\nserial = RS-232 or a USB-to-serial adapter.\nnetwork = a printer that is already on the network itself.',
     'pr.profile': 'Determines characters per line, code pages and which features the printer has. "detect automatically" reads the USB identity and the printer ID and decides - only change it if detection got it wrong.',
     'pr.enabled': 'Puts the printer into service. When disabled the configuration is kept but no port is opened and nothing is printed.',
@@ -451,6 +529,12 @@ const HELP = {
     'di.lpdOn': 'Accepts connections on TCP 515 (classic network printing). Helps with discovery and additionally allows real LPR printing.',
     'di.watchOn': 'Additionally opens passive listeners on IPP (631), ePOS (8008) and SSDP (1900). These never answer - they only record who knocked. That is precisely what reveals which protocol an app really uses.',
     'op.netalert': 'Prints a notice on THIS printer when the device loses or regains its network connection. Useful because the POS application cannot print then, and otherwise nobody learns why. If no printer is connected at that moment nothing is printed and nothing is caught up later.',
+    'ia.enabled': 'Switches automatic assignment on. BonBridge then looks for free IP addresses in its own subnet at start-up and on demand, and creates an IP alias for every active printer without a fixed address. Addresses you entered yourself are never touched. Off by default because it changes the network configuration of the device - that should be a decision, not a side effect of an update.',
+    'ia.interface': 'Which interface the extra addresses are created on. "auto" uses the interface that already carries the primary address - eth0 on LAN, usually wlan0 on a Pi Zero 2 W.',
+    'ia.range': 'Where to look. "auto" walks downwards from the top of the subnet, because DHCP pools least often reach there. A fixed range can be entered as 192.168.1.240-192.168.1.250 - useful when you excluded exactly that range from DHCP in the router.',
+    'ia.attempts': 'How many ARP requests are sent per address. A single lost broadcast would make a used address look free; three attempts is the value from RFC 5227.',
+    'ia.monitor': 'Keeps checking the assigned addresses in the background. Needed because an address that is free today can be leased to another device tomorrow - receipts then vanish without anything looking broken. The conflict shows up under "All checks".',
+    'ia.monitorInterval': 'Time between re-checks. 300 seconds is plenty: a duplicate address does not appear second by second, and every check costs a few broadcasts.',
     'nw.interval': 'How often the network state is checked. 60 seconds is a good compromise: quick enough to notice an outage early, cheap enough for a small Raspberry Pi. Minimum is 10 seconds.',
     'nw.confirmations': 'How many consecutive checks must agree before a slip is printed. At 2 a brief Wi-Fi roam does not produce one. At 1 it is reported immediately.',
     'nw.enabled': 'Switches the whole watchdog on or off. When off, the network state is neither checked nor displayed.',
@@ -1571,7 +1655,7 @@ async function renderSystem() {
     kv(LANG === 'de' ? 'Speicher frei' : 'Disk free', sys.disk ? fmtBytes(sys.disk.free) : '-') +
     '</div></div>' +
 
-    networkCard(config) + updateCard(config) +
+    networkCard(config) + aliasCard(config) + updateCard(config) +
 
     '<div class="card"><h2>' + t('sy.docs') + '</h2>' +
     '<p class="muted">' + (LANG === 'de'
@@ -1582,6 +1666,7 @@ async function renderSystem() {
 
   document.getElementById('cfgLang').value = config.web.language || 'de';
   if (document.getElementById('updLog')) pollUpdate();
+  loadAliases();
 }
 
 /* ---- network watchdog ------------------------------------------------- */
@@ -1665,6 +1750,177 @@ async function testNetworkSlip(printerId) {
 }
 window.saveNetworkWatch = saveNetworkWatch; window.checkNetworkNow = checkNetworkNow;
 window.testNetworkSlip = testNetworkSlip;
+
+/* ---- automatic IP aliases --------------------------------------------- */
+/*
+ * The card is rendered from the configuration immediately (so the switches do
+ * not flicker) and filled with the live alias list a moment later, because
+ * probing addresses over ARP takes seconds and must never hold up the page.
+ */
+
+function aliasCard(config) {
+  const settings = config.ip_aliases || {};
+  return '<div class="card"><h2>' + t('ia.title') + '</h2>' +
+    '<p class="fieldhelp">' + esc(t('ia.explain')) + '</p>' +
+    '<div class="grid2" style="margin-top:.8rem"><div>' +
+    checkbox('ia.enabled', 'iaEnabled', t('ia.enabled'), !!settings.auto_assign)
+      .replace('data-f="iaEnabled"', 'id="iaEnabled"') +
+    checkbox('ia.monitor', 'iaMonitor', t('ia.monitor'), settings.monitor !== false)
+      .replace('data-f="iaMonitor"', 'id="iaMonitor"') +
+    lbl('ia.interface', t('ia.interface')) +
+    '<input id="iaIface" value="' + esc(settings.interface || 'auto') + '" placeholder="auto">' +
+    lbl('ia.range', t('ia.range')) +
+    '<input id="iaRange" value="' + esc(settings.range || 'auto') + '" placeholder="auto">' +
+    '<div class="fieldhelp">' + esc(t('ia.rangeAuto')) + '</div>' +
+    '</div><div>' +
+    lbl('ia.attempts', t('ia.attempts')) +
+    '<input type="number" id="iaAttempts" min="1" max="10" value="' +
+    esc(settings.probe_attempts || 3) + '">' +
+    lbl('ia.monitorInterval', t('ia.monitorInterval')) +
+    '<input type="number" id="iaInterval" min="60" max="86400" step="60" value="' +
+    esc(settings.monitor_interval || 300) + '">' +
+    '<div class="fieldhelp" style="margin-top:.8rem"><span class="dot warn"></span>' +
+    esc(t('ia.dhcpWarn')) + '</div>' +
+    '</div></div>' +
+    '<div class="btnbar">' +
+    '<button class="act primary" onclick="saveAliasSettings()">' + t('sy.save') + '</button>' +
+    '<button class="act" onclick="scanAliases()">' + t('ia.scan') + '</button>' +
+    '<button class="act" onclick="assignAliases(false)">' + t('ia.assign') + '</button>' +
+    '<button class="act" onclick="recheckAliases()">' + t('ia.recheck') + '</button>' +
+    '</div>' +
+    '<div id="iaBody" class="muted" style="margin-top:.8rem">…</div>' +
+    '</div>';
+}
+
+function aliasBody(state) {
+  let html = '';
+  if (!state.supported) {
+    html += '<p class="fieldhelp"><span class="dot warn"></span>' + esc(t('ia.noRaw')) + '</p>';
+  }
+  html += '<div class="kv">' +
+    kv(t('ia.interface'), esc(state.interface || '-') +
+       (state.base_address ? ' — ' + esc(state.base_address) + '/' + esc(state.prefixlen) : '')) +
+    (state.gateway ? kv(t('ia.gateway'), esc(state.gateway)) : '') +
+    '</div>';
+
+  html += '<h3>' + t('ia.assigned') + '</h3>';
+  if (!(state.aliases || []).length) {
+    html += '<p class="muted">' + esc(t('ia.none')) + '</p>';
+  } else {
+    html += '<table><tr><th>' + t('ia.address') + '</th><th>' + t('ia.printer') +
+      '</th><th>' + t('ia.state') + '</th><th></th></tr>';
+    state.aliases.forEach((entry) => {
+      let dot = '<span class="dot ok"></span>' + t('ia.present');
+      if (entry.conflict && entry.conflict.kind === 'duplicate') {
+        dot = '<span class="dot error"></span>' + t('ia.conflict') +
+          (entry.conflict.mac ? ' (' + esc(entry.conflict.mac) + ')' : '');
+      } else if (!entry.present) {
+        dot = '<span class="dot error"></span>' + t('ia.missing');
+      }
+      html += '<tr><td><code>' + esc(entry.address) + '/' + esc(entry.prefixlen) + '</code></td>' +
+        '<td>' + esc(entry.printer || '-') + '</td><td>' + dot + '</td>' +
+        '<td><button class="act danger" onclick="releaseAlias(\'' + esc(entry.address) + '\')">' +
+        t('ia.release') + '</button></td></tr>';
+    });
+    html += '</table>';
+  }
+
+  if ((state.candidates || []).length) {
+    let rows = '<table><tr><th>' + t('ia.address') + '</th><th>' + t('ia.state') +
+      '</th><th>' + t('ia.method') + '</th></tr>';
+    state.candidates.forEach((c) => {
+      rows += '<tr><td><code>' + esc(c.address) + '</code></td><td>' +
+        (c.free
+          ? '<span class="dot ok"></span>' + t('ia.free')
+          : '<span class="dot warn"></span>' + t('ia.used') +
+            (c.mac ? ' — ' + t('ia.byWhom') + ' ' + esc(c.mac) : '')) +
+        '</td><td class="muted">' + esc(c.method) + '</td></tr>';
+    });
+    rows += '</table>';
+    html += foldable('ia:candidates', t('ia.candidates'), rows, true);
+  }
+  return html;
+}
+
+async function loadAliases() {
+  const box = document.getElementById('iaBody');
+  if (!box) return;
+  try {
+    const result = await api('/api/ip-aliases');
+    STATE.aliases = result.aliases;
+    box.classList.remove('muted');
+    box.innerHTML = aliasBody(result.aliases);
+  } catch (e) {
+    box.innerHTML = '<span class="muted">' + esc(e.message) + '</span>';
+  }
+}
+
+async function saveAliasSettings() {
+  const patch = { ip_aliases: {
+    auto_assign: document.getElementById('iaEnabled').checked,
+    monitor: document.getElementById('iaMonitor').checked,
+    interface: document.getElementById('iaIface').value.trim() || 'auto',
+    range: document.getElementById('iaRange').value.trim() || 'auto',
+    probe_attempts: Number(document.getElementById('iaAttempts').value) || 3,
+    monitor_interval: Number(document.getElementById('iaInterval').value) || 300
+  } };
+  try {
+    await api('/api/config', { method: 'PUT', body: JSON.stringify(patch) });
+    toast(t('common.saved'));
+    clearDirty('system');
+  } catch (e) { toast(t('common.error') + ': ' + e.message, true); }
+}
+
+async function scanAliases() {
+  const box = document.getElementById('iaBody');
+  if (box) box.innerHTML = '<span class="muted">' + esc(t('ia.searching')) + '</span>';
+  try {
+    await api('/api/ip-aliases/scan', { method: 'POST', body: JSON.stringify({ count: 6 }) });
+    await loadAliases();
+  } catch (e) { toast(t('common.error') + ': ' + e.message, true); await loadAliases(); }
+}
+
+async function assignAliases(force) {
+  const box = document.getElementById('iaBody');
+  if (box) box.innerHTML = '<span class="muted">' + esc(t('ia.searching')) + '</span>';
+  try {
+    const result = await api('/api/ip-aliases/assign',
+      { method: 'POST', body: JSON.stringify({ force: !!force }) });
+    const count = (result.assigned || []).length;
+    if (count) {
+      toast(t('ia.assignedN').replace('%s', count));
+    } else if ((result.note || '').indexOf('one printer') !== -1) {
+      if (confirm(t('ia.onePrinter') + '\n\n' + t('ia.force'))) { await assignAliases(true); return; }
+    } else {
+      toast(t('ia.nothing'));
+    }
+    await reload(true);
+    await loadAliases();
+  } catch (e) { toast(t('common.error') + ': ' + e.message, true); await loadAliases(); }
+}
+
+async function releaseAlias(address) {
+  if (!confirm(t('ia.confirmRelease').replace('%s', address))) return;
+  try {
+    await api('/api/ip-aliases/release', { method: 'POST', body: JSON.stringify({ address: address }) });
+    toast(t('common.saved'));
+    await reload(true);
+    await loadAliases();
+  } catch (e) { toast(t('common.error') + ': ' + e.message, true); }
+}
+
+async function recheckAliases() {
+  const box = document.getElementById('iaBody');
+  if (box) box.innerHTML = '<span class="muted">' + esc(t('ia.searching')) + '</span>';
+  try {
+    await api('/api/ip-aliases/check', { method: 'POST' });
+    await loadAliases();
+  } catch (e) { toast(t('common.error') + ': ' + e.message, true); await loadAliases(); }
+}
+
+window.saveAliasSettings = saveAliasSettings; window.scanAliases = scanAliases;
+window.assignAliases = assignAliases; window.releaseAlias = releaseAlias;
+window.recheckAliases = recheckAliases;
 
 /* ---- updates ---------------------------------------------------------- */
 

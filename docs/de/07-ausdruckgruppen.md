@@ -105,6 +105,79 @@ usb     EPSON TM-T88V (04b8:0202)
 > (Strom, Kabel, Hub) – kein Software-Problem. Erst weitermachen, wenn beide
 > zu sehen sind.
 
+## Der kurze Weg: BonBridge sucht die Adressen selbst
+
+Ab 1.3.4 muss man die Zusatzadressen nicht mehr von Hand aussuchen und
+anlegen. **Weboberfläche → System → „IP-Adressen für mehrere Drucker"**:
+
+1. **„Freie IP-Adressen automatisch zuweisen"** einschalten und speichern.
+2. **„Jetzt zuweisen"** drücken.
+
+BonBridge sucht dann im eigenen Subnetz freie Adressen, legt für jeden aktiven
+Drucker ohne feste Adresse einen IP-Alias an und trägt ihn beim Drucker ein.
+Die Adressen stehen danach in der Tabelle darunter und auf dem Statusbon.
+
+Über SSH geht dasselbe:
+
+```bash
+sudo bonbridge aliases              # nur suchen und anzeigen
+sudo bonbridge aliases --assign     # suchen und zuweisen
+sudo systemctl restart bonbridge
+```
+
+### Wie „frei" geprüft wird
+
+Nicht per Ping – **per ARP, nach RFC 5227.** Der Unterschied ist
+entscheidend: Ein Windows-PC beantwortet standardmäßig keinen Ping, benutzt
+seine IP-Adresse aber selbstverständlich weiter. Eine Ping-Prüfung würde
+genau diese Adresse als „frei" melden und beide Geräte lahmlegen. ARP kann
+kein IPv4-Gerät verweigern und trotzdem im Netz arbeiten.
+
+Gesendet wird eine ARP-Anfrage mit **Absenderadresse 0.0.0.0** – die Prüfung
+beansprucht die Adresse also nicht, nach der sie fragt. Drei Anfragen je
+Adresse, damit ein einzelner verlorener Broadcast eine belegte Adresse nicht
+frei aussehen lässt. Antwortet jemand, merkt sich BonBridge die MAC-Adresse
+des Antwortenden – daran unterscheidet es später „jemand anders hat sie
+genommen" von „das ist unser eigener Alias".
+
+Gesucht wird standardmäßig **vom oberen Ende des Subnetzes abwärts**, weil
+DHCP-Bereiche dort am seltensten hinreichen. Ein fester Bereich lässt sich
+eintragen: `192.168.1.240-192.168.1.250`.
+
+### Was das nicht kann
+
+Dass eine Adresse heute frei ist, sagt nichts über morgen. Liegt sie im
+DHCP-Bereich des Routers, kann der Router sie später an ein Handy vergeben –
+und dann verschwinden Bons, ohne dass irgendetwas kaputt aussieht.
+
+**Deshalb: den benutzten Bereich im Router aus dem DHCP-Bereich herausnehmen.**
+Das bleibt der einzige echte Schutz.
+
+BonBridge prüft die vergebenen Adressen alle fünf Minuten nach. Antwortet
+plötzlich eine fremde MAC-Adresse, erscheint das unter *Diagnose → Alle
+Prüfungen* als Fehler mit der MAC des Eindringlings. Verhindern kann BonBridge
+den Fall nicht – nur bemerken und benennen.
+
+### Neustart, Konflikte, Rückgabe
+
+* Die Aliase überleben einen Neustart: BonBridge merkt sich in `state.json`,
+  was es angelegt hat, und legt es beim Start neu an – **nach erneuter
+  Prüfung**. Ist die Adresse inzwischen von jemand anderem belegt, wird sie
+  *nicht* wieder beansprucht, sondern aufgegeben; der Drucker fällt auf
+  `0.0.0.0` zurück und druckt weiter, während der Konflikt gemeldet wird.
+* Von Hand eingetragene Adressen werden nie angefasst. Freigeben lassen sich
+  nur Adressen, die BonBridge selbst angelegt hat.
+* **Bei nur einem Drucker passiert absichtlich nichts:** `0.0.0.0` antwortet
+  ohnehin auf jeder Adresse des Geräts. Wer trotzdem eine eigene Adresse will,
+  bestätigt die Rückfrage bzw. benutzt `--force`.
+
+---
+
+## Der manuelle Weg
+
+Weiterhin gültig – und die richtige Wahl, wenn die Adressen aus anderen
+Gründen fest vorgegeben sind.
+
 ### 1. Freie IP-Adressen wählen
 
 Die zusätzlichen Adressen müssen

@@ -330,6 +330,12 @@ def device_checks(app: Any = None) -> List[Dict[str, Any]]:
             )
         )
 
+    if app is not None and hasattr(app, "ip_alias_state"):
+        try:
+            checks.extend(ip_alias_checks(app.ip_alias_state()))
+        except Exception as exc:  # noqa: BLE001
+            log.debug("IP alias check unavailable: %s", exc)
+
     if not checks:
         checks.append(
             _check(
@@ -339,6 +345,88 @@ def device_checks(app: Any = None) -> List[Dict[str, Any]]:
                 "Nothing to report",
                 "Alle Geräteprüfungen sind unauffällig.",
                 "All device checks passed.",
+            )
+        )
+    return checks
+
+
+def ip_alias_checks(state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Report on the addresses BonBridge assigned to its printers.
+
+    Three things can go wrong with an automatically assigned address, and all
+    three are invisible from the outside: the address can disappear (something
+    flushed the interface), it can be claimed by a second device (the router
+    leased it to a phone), or the automatic assignment can be switched on while
+    a printer still has no address at all.  Each of them stops receipts from
+    arriving without anything looking broken, so each gets a check.
+    """
+    checks: List[Dict[str, Any]] = []
+    aliases = state.get("aliases") or []
+    if not aliases and not state.get("enabled"):
+        return checks
+
+    for conflict in state.get("conflicts") or []:
+        address = conflict.get("address", "")
+        mac = conflict.get("mac", "")
+        if conflict.get("kind") == "missing":
+            checks.append(
+                _check(
+                    f"ipalias_missing_{address}",
+                    "error",
+                    f"IP-Alias {address} fehlt auf der Schnittstelle",
+                    f"IP alias {address} is missing from the interface",
+                    "Die Adresse war vergeben, ist aber nicht mehr da. Das Kassensystem "
+                    "erreicht diese Ausdruckgruppe nicht mehr. Ein Neustart des Dienstes "
+                    "legt sie wieder an.",
+                    "The address was assigned but is gone. The POS system can no longer "
+                    "reach this print group. Restarting the service re-creates it.",
+                )
+            )
+            continue
+        checks.append(
+            _check(
+                f"ipalias_conflict_{address}",
+                "error",
+                f"IP-Adresse {address} wird von einem zweiten Gerät benutzt",
+                f"IP address {address} is used by a second device",
+                f"Ein anderes Gerät ({mac or 'unbekannte MAC'}) antwortet auf diese Adresse. "
+                "Das ist fast immer der Router, der sie per DHCP vergeben hat. Adressbereich "
+                "im Router aus dem DHCP-Bereich ausnehmen oder in BonBridge einen anderen "
+                "Bereich einstellen.",
+                f"Another device ({mac or 'unknown MAC'}) answers for this address. This is "
+                "almost always the router handing it out via DHCP. Exclude the range from the "
+                "router's DHCP pool, or pick a different range in BonBridge.",
+            )
+        )
+
+    if state.get("enabled") and state.get("needs_address"):
+        missing = ", ".join(state["needs_address"])
+        checks.append(
+            _check(
+                "ipalias_pending",
+                "warn",
+                f"Noch keine eigene Adresse für: {missing}",
+                f"Still without an own address: {missing}",
+                "Die automatische Vergabe ist eingeschaltet, hat für diese Drucker aber "
+                "keine freie Adresse gefunden. Unter „System → IP-Adressen“ eine Suche "
+                "starten oder den Adressbereich anpassen.",
+                "Automatic assignment is on but found no free address for these printers. "
+                "Run a scan under 'System → IP addresses' or adjust the range.",
+            )
+        )
+
+    healthy = [a for a in aliases if a.get("present") and not a.get("conflict")]
+    if healthy:
+        listed = ", ".join(f"{a['address']} → {a.get('printer') or '?'}" for a in healthy)
+        checks.append(
+            _check(
+                "ipalias",
+                "ok",
+                f"{len(healthy)} automatisch vergebene IP-Adresse(n): {listed}",
+                f"{len(healthy)} automatically assigned IP address(es): {listed}",
+                "Die Adressen werden regelmäßig nachgeprüft (ARP), damit eine spätere "
+                "Doppelvergabe auffällt.",
+                "The addresses are re-checked regularly (ARP) so a later duplicate shows up.",
             )
         )
     return checks

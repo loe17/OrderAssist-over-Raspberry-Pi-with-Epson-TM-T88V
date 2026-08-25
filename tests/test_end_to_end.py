@@ -395,6 +395,132 @@ def check_discovery_protocols() -> None:
     check(log.total_requests() == 3, "the total counts every protocol")
 
 
+def check_ip_aliases() -> None:
+    """Address arithmetic, ARP frames and the safety rails around assignment.
+
+    None of this needs a second machine: the frame builder and the parser are
+    each other's inverse, and the candidate generator is pure arithmetic.  What
+    cannot be tested without a network - "does anybody answer" - is exactly the
+    part that must never be guessed, so it is isolated behind ``check_address``
+    and left alone here.
+    """
+    from bonbridge import ipalias
+
+    check(ipalias.ip_to_int("192.168.1.1") == 0xC0A80101, "an address becomes an integer")
+    check(ipalias.int_to_ip(0xC0A80101) == "192.168.1.1", "and back again")
+    first, last = ipalias.network_range("192.168.1.50", 24)
+    check(
+        ipalias.int_to_ip(first) == "192.168.1.1" and ipalias.int_to_ip(last) == "192.168.1.254",
+        "a /24 yields .1 to .254 (network and broadcast excluded)",
+    )
+    first26, last26 = ipalias.network_range("192.168.1.70", 26)
+    check(
+        ipalias.int_to_ip(first26) == "192.168.1.65"
+        and ipalias.int_to_ip(last26) == "192.168.1.126",
+        "a /26 is not assumed to be a /24",
+    )
+    check(ipalias.same_subnet("192.168.1.9", "192.168.1.240", 24), "same subnet recognised")
+    check(not ipalias.same_subnet("192.168.1.9", "192.168.2.240", 24), "other subnet recognised")
+
+    window = ipalias.parse_range("192.168.1.240-250")
+    check(
+        window is not None and ipalias.int_to_ip(window[0]) == "192.168.1.240"
+        and ipalias.int_to_ip(window[1]) == "192.168.1.250",
+        "a short range form is understood",
+    )
+    check(ipalias.parse_range("auto") is None, "'auto' is not a range")
+
+    # Candidates come from the top of the subnet and skip what is taken.
+    candidates = ipalias.candidate_addresses(
+        "192.168.1.50", 24, "auto", exclude=["192.168.1.254", "192.168.1.253"], limit=3
+    )
+    check(candidates[0] == "192.168.1.252", "auto starts at the top, below what is taken")
+    check("192.168.1.50" not in candidates, "the device's own address is never a candidate")
+    ranged = ipalias.candidate_addresses("192.168.1.50", 24, "192.168.1.240-192.168.1.242", limit=9)
+    check(ranged == ["192.168.1.240", "192.168.1.241", "192.168.1.242"], "a pinned range is honoured")
+
+    # The ARP probe must not claim the address it is asking about (RFC 5227).
+    mac = bytes.fromhex("020000000001")
+    frame = ipalias.build_arp_probe(mac, "192.168.1.240")
+    check(len(frame) >= 60, "the probe frame is padded to the Ethernet minimum")
+    check(frame[28:32] == b"\x00\x00\x00\x00", "the probe's sender IP is 0.0.0.0")
+    check(frame[38:42] == socket.inet_aton("192.168.1.240"), "the target address is in the frame")
+    parsed = ipalias.parse_arp_frame(frame)
+    check(parsed is not None and parsed["operation"] == 1, "our own frame parses as a request")
+    check(parsed["sender_ip"] == "0.0.0.0" and parsed["target_ip"] == "192.168.1.240",
+          "the parser reads back what the builder wrote")
+    check(ipalias.parse_arp_frame(b"\x00" * 20) is None, "a short frame is rejected, not guessed")
+
+    # ``ip -o -4 addr show`` output is parsed, including our own labels.
+    sample = (
+        "2: eth0    inet 192.168.1.50/24 brd 192.168.1.255 scope global dynamic eth0"
+        "\\       valid_lft 42sec preferred_lft 42sec\n"
+        "2: eth0    inet 192.168.1.251/24 scope global secondary eth0:bb1"
+        "\\       valid_lft forever preferred_lft forever\n"
+    )
+    entries = ipalias.parse_addresses(sample)
+    check(len(entries) == 2, "both addresses are parsed")
+    check(entries[0]["dynamic"] and not entries[0]["managed"], "the DHCP address is not ours")
+    check(entries[1]["managed"] and entries[1]["label"] == "eth0:bb1", "our own alias is recognised")
+    check(entries[1]["prefixlen"] == 24, "the prefix length is read")
+
+    # The manager never touches a printer that has a fixed address.
+    printers = [
+        {"id": "a", "enabled": True, "bind": "0.0.0.0"},
+        {"id": "b", "enabled": True, "bind": "192.168.1.77"},
+        {"id": "c", "enabled": False, "bind": "0.0.0.0"},
+    ]
+    needing = ipalias.AliasManager._printers_needing(printers)  # noqa: SLF001
+    check([p["id"] for p in needing] == ["a"], "only enabled printers without an address qualify")
+
+    # One printer alone gets nothing without --force: 0.0.0.0 already answers
+    # on every address, so an extra one would be pure risk for no benefit.
+    manager = ipalias.AliasManager({"auto_assign": True})
+    result = manager.assign([{"id": "a", "enabled": True, "bind": "0.0.0.0"}])
+    check(
+        not result.get("assigned"),
+        "a single printer is left on 0.0.0.0 unless assignment is forced",
+    )
+
+    # A conflict has to reach the health page, in both languages.
+    checks = health.ip_alias_checks(
+        {
+            "enabled": True,
+            "aliases": [{"address": "192.168.1.251", "printer": "a", "present": True}],
+            "conflicts": [
+                {"address": "192.168.1.251", "kind": "duplicate", "mac": "aa:bb:cc:dd:ee:ff"}
+            ],
+            "needs_address": [],
+        }
+    )
+    conflict = [c for c in checks if c["id"].startswith("ipalias_conflict")]
+    check(len(conflict) == 1, "a duplicate address produces a health check")
+    check(conflict[0]["level"] == "error", "and it is an error, not a hint")
+    check(
+        "aa:bb:cc:dd:ee:ff" in conflict[0]["detail_de"]
+        and "aa:bb:cc:dd:ee:ff" in conflict[0]["detail_en"],
+        "the intruding MAC address is named in both languages",
+    )
+    missing = health.ip_alias_checks(
+        {
+            "enabled": True,
+            "aliases": [{"address": "192.168.1.251", "printer": "a", "present": False}],
+            "conflicts": [{"address": "192.168.1.251", "kind": "missing", "mac": ""}],
+            "needs_address": ["b"],
+        }
+    )
+    check(
+        any(c["id"].startswith("ipalias_missing") for c in missing),
+        "a vanished alias is reported too",
+    )
+    check(
+        any(c["id"] == "ipalias_pending" for c in missing),
+        "a printer still waiting for an address is reported",
+    )
+    check(not health.ip_alias_checks({"enabled": False, "aliases": []}),
+          "nothing is reported when the feature is off and unused")
+
+
 def check_updater() -> None:
     """Archive handling: what goes in must come out, and only if it is ours."""
     from bonbridge import updater
@@ -531,6 +657,7 @@ def main() -> int:
         check_discovery_protocols()
         check_updater()
         check_image_printing()
+        check_ip_aliases()
 
         # 1. the RAW listener accepts a job like a POS application would
         payload = b"\x1b@Bestellung Tisch 4\n2x Cola\n1x Pommes\n\n\n"
@@ -945,6 +1072,24 @@ def main() -> int:
         get_json("/api/printers/theke1/network-test", method="POST", payload={"online": False})
         time.sleep(1.5)
         check(len(printer.data) > before, "the outage slip can be printed on demand")
+
+        # 8b2. IP aliases over the API.  Nothing is assigned here on purpose -
+        # the test machine's network configuration is not ours to change - but
+        # the state must be served and must never claim an address it did not
+        # create.
+        alias_state = get_json("/api/ip-aliases")["aliases"]
+        check("aliases" in alias_state and "settings" in alias_state, "alias state served")
+        check(alias_state["aliases"] == [], "no alias is claimed without being assigned")
+        check(alias_state["probe"] in ("arp", "ping"), "the probe method is named")
+        released = get_json(
+            "/api/ip-aliases/release", method="POST", payload={"address": "192.168.1.251"}
+        )
+        check(
+            released.get("ok") is False,
+            "an address BonBridge did not create cannot be released through the API",
+        )
+        conflicts = get_json("/api/ip-aliases/check", method="POST")
+        check(conflicts.get("ok") and conflicts.get("conflicts") == [], "conflict check runs clean")
 
         # 8c. printing an image
         support = get_json("/api/image/support")["support"]

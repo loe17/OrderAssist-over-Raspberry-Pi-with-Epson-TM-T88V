@@ -99,6 +99,77 @@ usb     EPSON TM-T88V (04b8:0202)
 > If `bonbridge scan` shows only one printer, it is a hardware problem (power,
 > cable, hub), not a software problem. Do not continue until both are visible.
 
+## The short way: BonBridge finds the addresses itself
+
+From 1.3.4 the extra addresses no longer have to be chosen and created by
+hand. **Web interface → System → "IP addresses for several printers"**:
+
+1. Switch on **"Assign free IP addresses automatically"** and save.
+2. Press **"Assign now"**.
+
+BonBridge then looks for free addresses in its own subnet, creates an IP alias
+for every active printer without a fixed address and enters it at the printer.
+The addresses appear in the table below and on the status slip.
+
+The same works over SSH:
+
+```bash
+sudo bonbridge aliases              # only scan and show
+sudo bonbridge aliases --assign     # scan and assign
+sudo systemctl restart bonbridge
+```
+
+### How "free" is decided
+
+Not by ping - **by ARP, per RFC 5227.** The difference matters: a Windows PC
+does not answer ping by default but of course keeps using its IP address. A
+ping-based check would report exactly that address as "free" and take down
+both devices. No IPv4 host can refuse ARP and still work on the network.
+
+The probe is an ARP request with **sender address 0.0.0.0** - so it does not
+claim the address it is asking about. Three requests per address, so a single
+lost broadcast cannot make a used address look free. If something answers,
+BonBridge records the answering MAC address; that is what later distinguishes
+"somebody else took it" from "this is our own alias".
+
+By default the search runs **downwards from the top of the subnet**, because
+DHCP pools least often reach there. A fixed range can be entered:
+`192.168.1.240-192.168.1.250`.
+
+### What this cannot do
+
+An address being free today says nothing about tomorrow. If it lies inside the
+router's DHCP pool, the router may lease it to a phone later - and then
+receipts vanish without anything looking broken.
+
+**So: exclude the range used here from the router's DHCP pool.** That remains
+the only real protection.
+
+BonBridge re-probes the assigned addresses every five minutes. If a foreign MAC
+suddenly answers, it shows up under *Diagnostics → All checks* as an error
+naming the intruder. BonBridge cannot prevent the case - only notice it and say
+so.
+
+### Reboot, conflicts, releasing
+
+* The aliases survive a reboot: BonBridge records in `state.json` what it
+  created and re-creates it at start-up - **after probing again**. If the
+  address has been taken over in the meantime it is *not* re-claimed but given
+  up; the printer falls back to `0.0.0.0` and keeps printing while the conflict
+  is reported.
+* Addresses entered by hand are never touched. Only addresses BonBridge created
+  itself can be released.
+* **With a single printer nothing happens, on purpose:** `0.0.0.0` already
+  answers on every address of the device. To assign one anyway, confirm the
+  prompt or use `--force`.
+
+---
+
+## The manual way
+
+Still valid - and the right choice when the addresses are fixed for other
+reasons.
+
 ### 1. Choose free IP addresses
 
 The additional addresses must

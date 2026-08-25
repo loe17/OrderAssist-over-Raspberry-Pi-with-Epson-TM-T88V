@@ -166,6 +166,33 @@ DEFAULTS: Dict[str, Any] = {
         # counts.  2 keeps a short Wi-Fi roam from producing a slip.
         "confirmations": 2,
     },
+    #: Automatic IP aliases (see ipalias.py).  A POS application addresses a
+    #: printer as ``<ip>:9100`` and cannot change the port, so several print
+    #: groups on one device need several IP addresses.  With ``auto_assign``
+    #: on, BonBridge looks for free addresses itself (ARP probe, RFC 5227) and
+    #: hands one to every enabled printer that has no fixed address.
+    #:
+    #: Off by default on purpose: this changes the network configuration of the
+    #: machine, and that must be a decision, not a side effect of an update.
+    "ip_aliases": {
+        "auto_assign": False,
+        # Which interface the extra addresses go on. "auto" = the interface
+        # that already carries the primary address.
+        "interface": "auto",
+        # Where to look. "auto" walks downwards from the top of the subnet,
+        # which is where DHCP pools least often reach. A range can be pinned
+        # explicitly: "192.168.1.240-192.168.1.250".
+        "range": "auto",
+        # How many ARP probes per address. One lost broadcast would otherwise
+        # make a used address look free.
+        "probe_attempts": 3,
+        # Keep probing the assigned addresses so a later DHCP collision is
+        # noticed instead of silently eating receipts.
+        "monitor": True,
+        "monitor_interval": 300.0,
+        # How many free addresses a manual scan should look for.
+        "candidates": 6,
+    },
     #: Software updates from GitHub (see updater.py).
     "update": {
         "repository": "loe17/Bonbridge",

@@ -99,7 +99,12 @@ Pi 4, eine Netzwerkkarte, zwei USB-Drucker
 
 Wichtig: Die zusätzliche IP muss vorher **auf dem Gerät angelegt** werden,
 sonst kann der Listener nicht starten (die Übersicht zeigt dann einen roten
-Netzwerk-Listener mit genau dieser Begründung). Wie das geht, steht in
+Netzwerk-Listener mit genau dieser Begründung).
+
+**Das musst du seit 1.3.4 nicht mehr von Hand tun:** Unter *System →
+„IP-Adressen für mehrere Drucker"* sucht BonBridge freie Adressen selbst
+(ARP-Prüfung nach RFC 5227), legt sie an und trägt sie hier ein. Details und
+den manuellen Weg beschreibt
 [07-ausdruckgruppen.md](07-ausdruckgruppen.md).
 
 Weitere sinnvolle Fälle für eine feste Bindung:
@@ -223,6 +228,9 @@ Beispielbefehle für CUPS, Windows, macOS und die Kommandozeile.
 * **Netzwerküberwachung** – Zustand aller Schnittstellen, Prüfintervall und ob
   bei einem Ausfall ein Hinweiszettel gedruckt wird
   (siehe [10-updates.md](10-updates.md))
+* **IP-Adressen für mehrere Drucker** – automatische Suche und Vergabe freier
+  IP-Adressen, Liste der vergebenen Adressen, Konfliktprüfung
+  (siehe [07-ausdruckgruppen.md](07-ausdruckgruppen.md))
 * **Updates** – installierte und verfügbare Version, Installation mit
   Konsolenausgabe, Upload einer Datei für Geräte ohne Internet, Backups
   (siehe [10-updates.md](10-updates.md))
@@ -262,6 +270,11 @@ einem Skript oder einem Monitoring-System ansprechen.
 | GET | `/api/network` | Zustand der Netzwerkverbindung |
 | POST | `/api/network/check` | Netzwerk sofort prüfen |
 | POST | `/api/printers/<id>/network-test` | Hinweiszettel testweise drucken |
+| GET | `/api/ip-aliases` | vergebene IP-Aliase, Einstellungen, Konflikte |
+| POST | `/api/ip-aliases/scan` | freie Adressen suchen (`{"count": 6}`) |
+| POST | `/api/ip-aliases/assign` | Adressen zuweisen (`{"force": false}`) |
+| POST | `/api/ip-aliases/release` | Adresse freigeben (`{"address": "..."}`) |
+| POST | `/api/ip-aliases/check` | vergebene Adressen auf Doppelvergabe prüfen |
 | GET | `/api/update` | Update-Status (installiert/verfügbar/Backups) |
 | POST | `/api/update/check` | bei GitHub nachfragen |
 | POST | `/api/update/install` | `{"source": "online"}` oder `{"source": "file", "file": "..."}` |

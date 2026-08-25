@@ -170,6 +170,20 @@ Vollständig öffentlich spezifiziert; die Umsetzung in
 * [RFC 3805 — Printer MIB v2](https://datatracker.ietf.org/doc/html/rfc3805) (`prtGeneralPrinterName`)
 * Epsons IANA-Enterprise-Nummer ist **1248** → `sysObjectID = 1.3.6.1.4.1.1248`
 
+### ARP und Adresskonflikte
+
+Die automatische Vergabe von IP-Aliasen in
+[`ipalias.py`](../../src/bonbridge/ipalias.py) prüft eine Adresse so, wie es
+der Standard vorsieht — mit Absenderadresse `0.0.0.0`, damit die Prüfung die
+Adresse nicht beansprucht, nach der sie fragt:
+
+* [RFC 5227 — IPv4 Address Conflict Detection](https://datatracker.ietf.org/doc/html/rfc5227)
+  (Probe-Aufbau, Anzahl und Abstand der Anfragen, laufende Konflikterkennung)
+* [RFC 826 — An Ethernet Address Resolution Protocol](https://datatracker.ietf.org/doc/html/rfc826)
+  (Paketaufbau)
+* [`ip-address(8)`](https://man7.org/linux/man-pages/man8/ip-address.8.html)
+  (iproute2, Anlegen und Entfernen der Adressen mit Label)
+
 ### IEEE 1284 Device ID
 
 Wird aus `/sys/class/usbmisc/lp*/device/ieee1284_id` gelesen

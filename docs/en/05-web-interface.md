@@ -95,8 +95,12 @@ Pi 4, one network interface, two USB printers
 
 Important: the extra IP has to exist **on the device** first, otherwise the
 listener cannot start (the overview then shows a red network listener with
-exactly that reason). How to create it is in
-[07-print-groups.md](07-print-groups.md).
+exactly that reason).
+
+**Since 1.3.4 you no longer have to do that by hand:** under *System -> "IP
+addresses for several printers"* BonBridge looks for free addresses itself (ARP
+probe per RFC 5227), creates them and enters them here. Details and the manual
+route are in [07-print-groups.md](07-print-groups.md).
 
 Other sensible reasons for a fixed binding:
 
@@ -213,6 +217,9 @@ CUPS, Windows, macOS and the command line.
   disk space
 * **Network watchdog** - state of every interface, check interval and whether a
   notice is printed on an outage (see [10-updates.md](10-updates.md))
+* **IP addresses for several printers** - automatic search and assignment of
+  free IP addresses, list of assigned addresses, conflict check
+  (see [07-print-groups.md](07-print-groups.md))
 * **Updates** - installed and available version, installation with console
   output, file upload for devices without internet, backups
   (see [10-updates.md](10-updates.md))
@@ -257,6 +264,11 @@ can use it too.
 | GET | `/api/network` | State of the network connection |
 | POST | `/api/network/check` | Check the network right now |
 | POST | `/api/printers/<id>/network-test` | Print the notice slip as a test |
+| GET | `/api/ip-aliases` | assigned IP aliases, settings, conflicts |
+| POST | `/api/ip-aliases/scan` | look for free addresses (`{"count": 6}`) |
+| POST | `/api/ip-aliases/assign` | assign addresses (`{"force": false}`) |
+| POST | `/api/ip-aliases/release` | release an address (`{"address": "..."}`) |
+| POST | `/api/ip-aliases/check` | re-check the assigned addresses for duplicates |
 | GET | `/api/update` | Update state (installed/available/backups) |
 | POST | `/api/update/check` | Ask GitHub |
 | POST | `/api/update/install` | `{"source": "online"}` or `{"source": "file", "file": "..."}` |

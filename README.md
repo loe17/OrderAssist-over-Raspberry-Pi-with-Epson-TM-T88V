@@ -73,7 +73,10 @@ other software may be using them.
   line width are read out of the printer profile instead of being found by
   trial and error.
 * **Several print groups from one device.** POS apps address printers by IP
-  only, so BonBridge can bind each printer to its own IP alias, all on 9100.
+  only, so BonBridge can bind each printer to its own IP alias, all on 9100 -
+  and it **finds those addresses itself**, verified by ARP probing (RFC 5227)
+  and re-checked afterwards, so a later DHCP collision is reported instead of
+  silently eating receipts.
 * **Feature switches.** Cutter, cash drawer, buzzer, barcode, QR, graphics -
   each detected automatically and each overridable in the web interface.
 * **Works with several transports:** libusb (also for printers that never

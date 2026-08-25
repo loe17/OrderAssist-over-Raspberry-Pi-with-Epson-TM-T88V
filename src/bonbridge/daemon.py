@@ -19,6 +19,7 @@ from . import (
     escpos,
     health,
     images,
+    ipalias,
     lpd,
     mdns,
     netwatch,
@@ -103,6 +104,7 @@ class BonBridge:
         #: One log for every discovery protocol (see probes.py).
         self.probe_log = probes.ProbeLog()
         self.netwatch: Optional[netwatch.NetworkWatcher] = None
+        self.ipalias: Optional[ipalias.AliasManager] = None
         self.update_checker: Optional[updater.UpdateChecker] = None
         self.web_server: Any = None
         self.version = __version__
@@ -116,6 +118,9 @@ class BonBridge:
     def start(self) -> None:
         paths.ensure_runtime_dirs()
         self._ensure_default_printer()
+        # Before the printers: a RAW listener bound to a fixed address cannot
+        # start until that address exists on the interface.
+        self._start_ip_aliases()
         self._start_printers()
         self._start_discovery()
         self._start_netwatch()
@@ -312,6 +317,103 @@ class BonBridge:
     # ------------------------------------------------------------------
     # Network watchdog
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Automatic IP aliases
+    # ------------------------------------------------------------------
+
+    def _start_ip_aliases(self) -> None:
+        """Restore recorded aliases and, if wanted, assign missing ones.
+
+        Order matters: this runs *before* the printers, because a RAW listener
+        bound to a fixed address fails to start while that address does not
+        exist on the interface yet.
+        """
+        settings = self.config.data.get("ip_aliases") or {}
+        manager = ipalias.AliasManager(settings, on_change=self._save_config_quietly)
+        self.ipalias = manager
+
+        try:
+            restored = manager.restore(self.config.printers)
+        except Exception as exc:  # noqa: BLE001 - never block the start
+            log.warning("Cannot restore IP aliases: %s", exc)
+            restored = {}
+        if restored.get("restored"):
+            log.info("Restored IP aliases: %s", ", ".join(restored["restored"]))
+        if restored.get("dropped"):
+            log.warning(
+                "IP aliases given up (address taken over): %s", ", ".join(restored["dropped"])
+            )
+
+        if settings.get("auto_assign"):
+            try:
+                result = manager.assign(self.config.printers)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("Automatic IP alias assignment failed: %s", exc)
+                result = {}
+            for entry in result.get("assigned") or []:
+                log.info(
+                    "Printer '%s' received %s on %s",
+                    entry["printer"],
+                    entry["address"],
+                    entry["interface"],
+                )
+            for entry in result.get("failed") or []:
+                log.warning("No address for printer '%s': %s", entry["printer"], entry["error"])
+        manager.start_monitor()
+
+    def _save_config_quietly(self) -> None:
+        try:
+            self.config.save()
+        except OSError as exc:
+            log.warning("Cannot write configuration: %s", exc)
+
+    def ip_alias_state(self) -> Dict[str, Any]:
+        if self.ipalias is None:
+            return {"supported": False, "aliases": [], "settings": {}, "enabled": False}
+        snapshot = self.ipalias.snapshot(self.config.printers)
+        snapshot["enabled"] = bool((self.config.data.get("ip_aliases") or {}).get("auto_assign"))
+        snapshot["printers"] = [
+            {
+                "id": printer["id"],
+                "name": printer.get("name", printer["id"]),
+                "enabled": printer.get("enabled", True),
+                "bind": printer.get("bind", "0.0.0.0"),
+                "managed": printer.get("bind") in {a["address"] for a in snapshot["aliases"]},
+            }
+            for printer in self.config.printers
+        ]
+        return snapshot
+
+    def scan_ip_aliases(self, count: int = 0) -> Dict[str, Any]:
+        if self.ipalias is None:
+            return {"ok": False, "error": "IP alias management is not available"}
+        return self.ipalias.scan(count)
+
+    def assign_ip_aliases(self, force: bool = False) -> Dict[str, Any]:
+        """Assign addresses now and restart the listeners that changed."""
+        if self.ipalias is None:
+            return {"ok": False, "error": "IP alias management is not available"}
+        result = self.ipalias.assign(self.config.printers, force=force)
+        if result.get("assigned"):
+            self._save_config_quietly()
+            self.restart_printers()
+            self.ipalias.start_monitor()
+        return result
+
+    def release_ip_alias(self, address: str) -> Dict[str, Any]:
+        if self.ipalias is None:
+            return {"ok": False, "error": "IP alias management is not available"}
+        result = self.ipalias.release(address, self.config.printers)
+        if result.get("ok"):
+            self._save_config_quietly()
+            self.restart_printers()
+        return result
+
+    def check_ip_aliases(self) -> Dict[str, Any]:
+        if self.ipalias is None:
+            return {"ok": False, "error": "IP alias management is not available"}
+        return {"ok": True, "conflicts": self.ipalias.check_conflicts()}
 
     def _start_netwatch(self) -> None:
         settings = self.config.data.get("network_watch") or {}
@@ -568,6 +670,12 @@ class BonBridge:
         if self.update_checker is not None:
             self.update_checker.stop()
             self.update_checker = None
+        if self.ipalias is not None:
+            # The aliases themselves stay on the interface: the printers may
+            # still be reachable through a restart, and they are re-verified
+            # and re-created at the next start anyway.
+            self.ipalias.stop()
+            self.ipalias = None
         with self._lock:
             for runtime in self.printers.values():
                 runtime.stop()

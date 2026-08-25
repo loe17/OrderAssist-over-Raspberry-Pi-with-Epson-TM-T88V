@@ -54,6 +54,18 @@ def build_parser() -> argparse.ArgumentParser:
     test.add_argument("--printer", default=None, help="printer id (default: the first one)")
     test.add_argument("--kind", default="standard", choices=["standard", "features", "minimal"])
 
+    aliases = subparsers.add_parser(
+        "aliases", help="find free IP addresses and assign them to the printers"
+    )
+    aliases.add_argument(
+        "--assign", action="store_true", help="assign addresses instead of only scanning"
+    )
+    aliases.add_argument(
+        "--force", action="store_true", help="assign even when only one printer is active"
+    )
+    aliases.add_argument("--release", default=None, help="give an assigned address back")
+    aliases.add_argument("--count", type=int, default=6, help="how many free addresses to look for")
+
     update = subparsers.add_parser("update", help="check for a new version and install it")
     update.add_argument("--check", action="store_true", help="only check, do not install")
     update.add_argument("-y", "--yes", action="store_true", help="do not ask for confirmation")
@@ -64,6 +76,55 @@ def build_parser() -> argparse.ArgumentParser:
     )
     update.add_argument("--list-backups", action="store_true", help="show available backups")
     return parser
+
+
+def command_aliases(args: argparse.Namespace, config: Config) -> int:
+    """Scan, assign or release IP aliases from the shell.
+
+    Useful over SSH and, more importantly, honest: the same probe the daemon
+    runs, with its result printed instead of hidden in a log file.
+    """
+    from . import ipalias
+
+    manager = ipalias.AliasManager(config.data.get("ip_aliases") or {})
+    base = manager.base()
+    if not base:
+        print("No IPv4 address on this device - nothing to work with.", file=sys.stderr)
+        return 1
+    print(f"Interface {base['interface']}  {base['address']}/{base['prefixlen']}")
+    print(f"Probe method: {'ARP (RFC 5227)' if ipalias.HAVE_AF_PACKET else 'ping (fallback)'}")
+
+    if args.release:
+        result = manager.release(args.release, config.printers)
+        if not result.get("ok"):
+            print(f"Cannot release {args.release}: {result.get('error')}", file=sys.stderr)
+            return 1
+        config.save()
+        print(f"Released {args.release}. Restart the service to apply it.")
+        return 0
+
+    if args.assign:
+        result = manager.assign(config.printers, force=args.force)
+        for entry in result.get("assigned") or []:
+            print(f"  {entry['address']}/{entry['prefixlen']} -> {entry['printer']} ({entry['name']})")
+        for entry in result.get("failed") or []:
+            print(f"  {entry['printer']}: {entry['error']}", file=sys.stderr)
+        if result.get("note"):
+            print(f"  {result['note']}")
+        if result.get("assigned"):
+            config.save()
+            print("\nConfiguration written. Restart the service: systemctl restart bonbridge")
+        return 0 if result.get("ok", True) else 1
+
+    result = manager.scan(args.count)
+    if not result.get("ok"):
+        print(result.get("error", "scan failed"), file=sys.stderr)
+        return 1
+    for entry in result["candidates"]:
+        mark = "free" if entry["free"] else f"used by {entry['mac'] or 'someone'}"
+        print(f"  {entry['address']:<16} {mark}  [{entry['method']}]")
+    print(f"\n{len(result['free'])} free address(es) found.")
+    return 0
 
 
 def command_scan() -> int:
@@ -235,6 +296,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "update":
         setup_logging(args.log_level or "WARNING", to_file=False)
         return command_update(args, config)
+
+    if args.command == "aliases":
+        setup_logging(args.log_level or "WARNING", to_file=False)
+        return command_aliases(args, config)
 
     setup_logging(level, to_file=not args.no_log_file)
 
